@@ -62,3 +62,14 @@ func (repo *Repository) GetLocations(ctx context.Context, swLat, swLng, neLat, n
 
 	return results, nil
 }
+
+func (repo *Repository) GetFeed(ctx context.Context, id int64) (*feeds.Feed, error) {
+	row := repo.pool.QueryRow(context.Background(), fmt.Sprintf("SELECT id, full_text, is_resolved, channel FROM feeds_entry WHERE id=%d", id))
+
+	var feed feeds.Feed
+	if err := row.Scan(&feed.ID, &feed.FullText, &feed.IsResolved, &feed.Channel); err != nil {
+		return nil, fmt.Errorf("could not query feed with id : %w", err)
+	}
+
+	return &feed, nil
+}

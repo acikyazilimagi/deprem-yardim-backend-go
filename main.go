@@ -24,6 +24,22 @@ func main() {
 
 	feedsGroup := app.Group("/feeds")
 
+	feedsGroup.Get("/:id", func(ctx *fiber.Ctx) error {
+		feedIDStr := ctx.Params("id")
+
+		feedID, err := strconv.ParseInt(feedIDStr, 10, 64)
+		if err != nil {
+			return ctx.SendStatus(fiber.StatusBadRequest)
+		}
+
+		feed, err := repo.GetFeed(feedID)
+		if err != nil {
+			return ctx.JSON(err)
+		}
+
+		return ctx.JSON(feed)
+	})
+
 	feedsGroup.Get("/areas", func(ctx *fiber.Ctx) error {
 		swLatStr := ctx.Query("sw_lat")
 		swLngStr := ctx.Query("sw_lng")

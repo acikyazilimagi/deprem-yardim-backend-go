@@ -1,10 +1,10 @@
 package feeds
 
-type Raw struct {
-	Channel    string `json:"channel"`
-	FullText   string `json:"full_text"`
+type Feed struct {
 	ID         int64  `json:"id"`
+	FullText   string `json:"full_text"`
 	IsResolved bool   `json:"is_resolved"`
+	Channel    string `json:"channel"`
 }
 
 type LatLng struct {
@@ -21,7 +21,7 @@ type Result struct {
 	FormattedAddress string    `json:"formatted_address"`
 	ID               int64     `json:"id"`
 	Loc              []float64 `json:"loc"`
-	Raw              Raw       `json:"raw"`
+	Raw              Feed      `json:"raw"`
 	ViewPort         ViewPort  `json:"view_port"`
 }
 

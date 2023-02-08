@@ -19,7 +19,8 @@ func main() {
 	app := fiber.New()
 	app.Use(cors.New())
 	app.Use(recover2.New())
-	app.Use(monitor.New())
+
+	app.Get("/monitor", monitor.New())
 
 	feedsGroup := app.Group("/feeds")
 

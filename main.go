@@ -8,6 +8,7 @@ import (
 	"github.com/acikkaynak/backend-api-go/repository"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	recover2 "github.com/gofiber/fiber/v2/middleware/recover"
 )
 
 func main() {
@@ -16,6 +17,7 @@ func main() {
 
 	app := fiber.New()
 	app.Use(cors.New())
+	app.Use(recover2.New())
 
 	feedsGroup := app.Group("/feeds")
 

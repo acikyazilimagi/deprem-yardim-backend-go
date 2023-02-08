@@ -10,6 +10,27 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+var (
+	getLocationsQuery = "SELECT " +
+		"fl.id, " +
+		"formatted_address, " +
+		"latitude, " +
+		"longitude, " +
+		"northeast_lat, " +
+		"northeast_lng, " +
+		"southwest_lat, " +
+		"southwest_lng, " +
+		"fe.full_text, " +
+		"fe.timestamp," +
+		"fe.extra_parameters " +
+		"FROM feeds_location fl " +
+		"inner join feeds_entry fe on fe.id = fl.entry_id " +
+		"where southwest_lat >= %f " +
+		"and southwest_lng >= %f " +
+		"and northeast_lat <= %f " +
+		"and northeast_lng <= %f"
+)
+
 type Repository struct {
 	pool *pgxpool.Pool
 }
@@ -35,7 +56,7 @@ func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64) ([]feed
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	query, err := repo.pool.Query(ctx, fmt.Sprintf("SELECT id, formatted_address, latitude, longitude, northeast_lat, northeast_lng, southwest_lat, southwest_lng from feeds_location where southwest_lat >= %f and southwest_lng >= %f  and northeast_lat <= %f and northeast_lng <= %f", swLat, swLng, neLat, neLng))
+	query, err := repo.pool.Query(ctx, fmt.Sprintf(getLocationsQuery, swLat, swLng, neLat, neLng))
 	if err != nil {
 		return nil, fmt.Errorf("could not query locations: %w", err)
 	}
@@ -45,22 +66,23 @@ func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64) ([]feed
 	for query.Next() {
 		var result feeds.Result
 		result.Loc = make([]float64, 2)
-		var id int64
 
-		err := query.Scan(&id,
+		err := query.Scan(&result.ID,
 			&result.FormattedAddress,
 			&result.Loc[0],
 			&result.Loc[1],
 			&result.ViewPort.Northeast.Lat,
 			&result.ViewPort.Northeast.Lng,
 			&result.ViewPort.Southwest.Lat,
-			&result.ViewPort.Southwest.Lng)
+			&result.ViewPort.Southwest.Lng,
+			&result.Raw.FullText,
+			&result.Raw.Timestamp,
+			&result.Raw.ExtraParameters)
 		if err != nil {
 			continue
 			//return nil, fmt.Errorf("could not scan locations: %w", err)
 		}
 
-		result.ID = id
 		results = append(results, result)
 	}
 

@@ -61,12 +61,12 @@ func main() {
 		neLat, _ := strconv.ParseFloat(neLatStr, 64)
 		neLng, _ := strconv.ParseFloat(neLngStr, 64)
 
-		data, err := repo.GetLocations(ctx.UserContext(), swLat, swLng, neLat, neLng)
+		data, err := repo.GetLocations(swLat, swLng, neLat, neLng)
 		if err != nil {
 			return ctx.JSON(err)
 		}
 
-		resp := feeds.Response{
+		resp := &feeds.Response{
 			Count:   len(data),
 			Results: data,
 		}

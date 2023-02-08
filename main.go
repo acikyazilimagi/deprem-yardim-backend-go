@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"syscall"
 
+	"github.com/acikkaynak/backend-api-go/cache"
 	"github.com/acikkaynak/backend-api-go/feeds"
 	"github.com/acikkaynak/backend-api-go/repository"
 	"github.com/gofiber/adaptor/v2"
@@ -14,16 +15,38 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/monitor"
 	recover2 "github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
 	repo := repository.New()
 	defer repo.Close()
+	cacheRepo := cache.NewRedisRepository()
 
 	app := fiber.New()
 	app.Use(cors.New())
 	app.Use(recover2.New())
+	app.Use(func(c *fiber.Ctx) error {
+		if c.Path() == "/healthcheck" ||
+			c.Path() == "/metrics" ||
+			c.Path() == "/monitor" {
+			return c.Next()
+		}
+
+		reqURI := c.OriginalURL()
+		hashURL := uuid.NewSHA1(uuid.NameSpaceOID, []byte(reqURI)).String()
+		cacheData := cacheRepo.Get(hashURL)
+
+		if cacheData == nil {
+			c.Next()
+			cacheRepo.SetKey(hashURL, c.Response().Body(), 0)
+			return nil
+		}
+
+		return c.JSON(cacheData)
+	})
+
 	app.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
 
 	app.Get("/monitor", monitor.New())

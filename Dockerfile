@@ -9,10 +9,10 @@ RUN CGO_ENABLED=0 go build main.go
 FROM gcr.io/distroless/static-debian11
 WORKDIR /api
 
-COPY --from=builder /main /api
-
 USER nonroot:nonroot
+
+COPY --from=builder --chown=nonroot:nonroot /main /api
 
 EXPOSE 8000
 
-ENTRYPOINT ["/api"]
+ENTRYPOINT ["/api/main"]

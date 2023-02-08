@@ -13,6 +13,6 @@ USER nonroot:nonroot
 
 COPY --from=builder --chown=nonroot:nonroot /main /api
 
-EXPOSE 8000
+EXPOSE 80
 
 ENTRYPOINT ["/api/main"]

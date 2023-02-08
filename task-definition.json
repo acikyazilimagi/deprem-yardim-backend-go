@@ -20,7 +20,7 @@
           "awslogs-stream-prefix": "ecs"
         }
       },
-      "entryPoint": [],
+      "entryPoint": null,
       "portMappings": [
         {
           "hostPort": 80,
@@ -28,7 +28,7 @@
           "containerPort": 80
         }
       ],
-      "command": [],
+      "command": null,
       "linuxParameters": null,
       "cpu": 2048,
       "environment": [],
@@ -43,7 +43,7 @@
       "memoryReservation": null,
       "volumesFrom": [],
       "stopTimeout": null,
-      "image": "366354050833.dkr.ecr.eu-central-1.amazonaws.com/base-ecr:bb25d9e250d75c77de48ad90cd98bb5016f73df2",
+      "image": "366354050833.dkr.ecr.eu-central-1.amazonaws.com/base-ecr:41927164e875f467e747fdaa7b1040c7df36843e",
       "startTimeout": null,
       "firelensConfiguration": null,
       "dependsOn": null,
@@ -65,12 +65,12 @@
   ],
   "placementConstraints": [],
   "memory": "4096",
-  "taskRoleArn": null,
+  "taskRoleArn": "arn:aws:iam::366354050833:role/ecsServiceRole",
   "compatibilities": [
     "EC2",
     "FARGATE"
   ],
-  "taskDefinitionArn": "arn:aws:ecs:eu-central-1:366354050833:task-definition/api-go-TD:5",
+  "taskDefinitionArn": "arn:aws:ecs:eu-central-1:366354050833:task-definition/api-go-TD:7",
   "family": "api-go-TD",
   "requiresAttributes": [
     {
@@ -107,6 +107,12 @@
       "targetId": null,
       "targetType": null,
       "value": null,
+      "name": "com.amazonaws.ecs.capability.task-iam-role"
+    },
+    {
+      "targetId": null,
+      "targetType": null,
+      "value": null,
       "name": "ecs.capability.execution-role-ecr-pull"
     },
     {
@@ -135,7 +141,7 @@
   "networkMode": "awsvpc",
   "runtimePlatform": null,
   "cpu": "2048",
-  "revision": 5,
+  "revision": 7,
   "status": "ACTIVE",
   "inferenceAccelerators": null,
   "proxyConfiguration": null,

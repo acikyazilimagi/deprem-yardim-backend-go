@@ -50,6 +50,7 @@ func main() {
 	app.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
 
 	app.Get("/monitor", monitor.New())
+
 	app.Get("/feeds/areas", func(ctx *fiber.Ctx) error {
 		swLatStr := ctx.Query("sw_lat")
 		swLngStr := ctx.Query("sw_lng")

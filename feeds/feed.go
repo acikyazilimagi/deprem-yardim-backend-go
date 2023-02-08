@@ -1,10 +1,16 @@
 package feeds
 
+import (
+	"time"
+)
+
 type Feed struct {
-	ID         int64  `json:"id"`
-	FullText   string `json:"full_text"`
-	IsResolved bool   `json:"is_resolved"`
-	Channel    string `json:"channel"`
+	ID              int64     `json:"id,omitempty"`
+	FullText        string    `json:"full_text"`
+	IsResolved      bool      `json:"is_resolved"`
+	Channel         string    `json:"channel,omitempty"`
+	Timestamp       time.Time `json:"timestamp"`
+	ExtraParameters *string   `json:"extra_parameters,omitempty"`
 }
 
 type LatLng struct {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/acikkaynak/backend-api-go/feeds"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -30,8 +31,11 @@ func (repo *Repository) Close() {
 	repo.pool.Close()
 }
 
-func (repo *Repository) GetLocations(ctx context.Context, swLat, swLng, neLat, neLng float64) ([]feeds.Result, error) {
-	query, err := repo.pool.Query(context.Background(), fmt.Sprintf("SELECT id, formatted_address, latitude, longitude, northeast_lat, northeast_lng, southwest_lat, southwest_lng from feeds_location where southwest_lat >= %f and southwest_lng >= %f  and northeast_lat <= %f and northeast_lng <= %f", swLat, swLng, neLat, neLng))
+func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64) ([]feeds.Result, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	query, err := repo.pool.Query(ctx, fmt.Sprintf("SELECT id, formatted_address, latitude, longitude, northeast_lat, northeast_lng, southwest_lat, southwest_lng from feeds_location where southwest_lat >= %f and southwest_lng >= %f  and northeast_lat <= %f and northeast_lng <= %f", swLat, swLng, neLat, neLng))
 	if err != nil {
 		return nil, fmt.Errorf("could not query locations: %w", err)
 	}
@@ -64,7 +68,9 @@ func (repo *Repository) GetLocations(ctx context.Context, swLat, swLng, neLat, n
 }
 
 func (repo *Repository) GetFeed(id int64) (*feeds.Feed, error) {
-	row := repo.pool.QueryRow(context.Background(), fmt.Sprintf("SELECT id, full_text, is_resolved, channel FROM feeds_entry WHERE id=%d", id))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	row := repo.pool.QueryRow(ctx, fmt.Sprintf("SELECT id, full_text, is_resolved, channel FROM feeds_entry WHERE id=%d", id))
 
 	var feed feeds.Feed
 	if err := row.Scan(&feed.ID, &feed.FullText, &feed.IsResolved, &feed.Channel); err != nil {

@@ -2,7 +2,7 @@
 
 # Proje Mimarisi
 
-[architecture](/docs/architecture.png)
+![architecture](/docs/architecture.png)
 
 # Endpointler
 
@@ -20,8 +20,8 @@ Tekil bir işlenmemiş twitter verisini döner.
 
 ### /monitor
 
-[monitor](/docs/fiber-monitor.png)
+![monitor](/docs/fiber-monitor.png)
 
 ### /metrics
 
-[metrics](/docs/metrics.png)
+![metrics](/docs/metrics.png)

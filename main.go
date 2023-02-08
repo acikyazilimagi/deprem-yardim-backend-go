@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/acikkaynak/backend-api-go/feeds"
@@ -47,6 +48,6 @@ func main() {
 	})
 
 	if err := app.Listen(":80"); err != nil {
-		panic("could not start app")
+		panic(fmt.Sprintf("app error: %s", err.Error()))
 	}
 }

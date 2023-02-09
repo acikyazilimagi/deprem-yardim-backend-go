@@ -12,19 +12,11 @@ import (
 
 var (
 	getLocationsQuery = "SELECT " +
-		"fl.id, " +
-		"formatted_address, " +
+		"id, " +
 		"latitude, " +
 		"longitude, " +
-		"northeast_lat, " +
-		"northeast_lng, " +
-		"southwest_lat, " +
-		"southwest_lng, " +
-		"fe.full_text, " +
-		"fe.timestamp," +
-		"fe.extra_parameters " +
-		"FROM feeds_location fl " +
-		"inner join feeds_entry fe on fe.id = fl.entry_id " +
+		"entry_id " +
+		"FROM feeds_location " +
 		"where southwest_lat >= %f " +
 		"and southwest_lng >= %f " +
 		"and northeast_lat <= %f " +
@@ -68,16 +60,9 @@ func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64) ([]feed
 		result.Loc = make([]float64, 2)
 
 		err := query.Scan(&result.ID,
-			&result.FormattedAddress,
 			&result.Loc[0],
 			&result.Loc[1],
-			&result.ViewPort.Northeast.Lat,
-			&result.ViewPort.Northeast.Lng,
-			&result.ViewPort.Southwest.Lat,
-			&result.ViewPort.Southwest.Lng,
-			&result.Raw.FullText,
-			&result.Raw.Timestamp,
-			&result.Raw.ExtraParameters)
+			&result.Entry_ID)
 		if err != nil {
 			continue
 			//return nil, fmt.Errorf("could not scan locations: %w", err)
@@ -92,10 +77,13 @@ func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64) ([]feed
 func (repo *Repository) GetFeed(id int64) (*feeds.Feed, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-	row := repo.pool.QueryRow(ctx, fmt.Sprintf("SELECT id, full_text, is_resolved, channel, extra_parameters FROM feeds_entry WHERE id=%d", id))
+	row := repo.pool.QueryRow(ctx, fmt.Sprintf(
+		"SELECT fe.id, full_text, is_resolved, channel, fe.timestamp, fe.extra_parameters, fl.formatted_address " + 
+		"FROM feeds_entry fe, feeds_location fl " + 
+		"WHERE fe.id = fl.entry_id AND fe.id=%d", id))
 
 	var feed feeds.Feed
-	if err := row.Scan(&feed.ID, &feed.FullText, &feed.IsResolved, &feed.Channel, &feed.ExtraParameters); err != nil {
+	if err := row.Scan(&feed.ID, &feed.FullText, &feed.IsResolved, &feed.Channel, &feed.Timestamp, &feed.ExtraParameters, &feed.FormattedAddress); err != nil {
 		return nil, fmt.Errorf("could not query feed with id : %w", err)
 	}
 

@@ -11,6 +11,7 @@ type Feed struct {
 	Channel         string    `json:"channel,omitempty"`
 	Timestamp       time.Time `json:"timestamp"`
 	ExtraParameters *string   `json:"extra_parameters,omitempty"`
+	FormattedAddress string   `json:"formatted_address,omitempty"`
 }
 
 type LatLng struct {
@@ -18,17 +19,15 @@ type LatLng struct {
 	Lng float64 `json:"lng"`
 }
 
-type ViewPort struct {
-	Northeast LatLng `json:"northeast"`
-	Southwest LatLng `json:"southwest"`
-}
-
 type Result struct {
-	FormattedAddress string    `json:"formatted_address"`
 	ID               int64     `json:"id"`
 	Loc              []float64 `json:"loc"`
-	Raw              Feed      `json:"raw"`
-	ViewPort         ViewPort  `json:"view_port"`
+	Entry_ID	     int64 	   `json:"entry_id"`
+}
+
+type LiteResult struct {
+	ID               int64     `json:"id"`
+	Loc              []float64 `json:"loc"`
 }
 
 type Response struct {

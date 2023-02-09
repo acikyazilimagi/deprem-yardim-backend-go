@@ -2,29 +2,55 @@ package main
 
 import (
 	"fmt"
-	"github.com/acikkaynak/backend-api-go/handler"
-	"net/http"
-	"log"
-	"os"
-	"os/signal"
 	"strconv"
-	"syscall"
 	"time"
-
+	"github.com/Shopify/sarama"
 	"github.com/acikkaynak/backend-api-go/broker"
 	"github.com/acikkaynak/backend-api-go/cache"
-	"github.com/acikkaynak/backend-api-go/feeds"
 	"github.com/acikkaynak/backend-api-go/handler"
 	"github.com/acikkaynak/backend-api-go/repository"
+	_ "github.com/acikkaynak/backend-api-go/swagger"
+	swagger "github.com/arsmn/fiber-swagger/v2"
 	"github.com/gofiber/adaptor/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/monitor"
+  "github.com/acikkaynak/backend-api-go/middleware/auth"
 	recover2 "github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
+type Application struct {
+	app           *fiber.App
+	repo          *repository.Repository
+	kafkaProducer sarama.SyncProducer
+}
+
+func (a *Application) Register() {
+	a.app.Get("/", handler.RedirectSwagger)
+	a.app.Get("/healthcheck", handler.Healtcheck)
+	a.app.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
+	a.app.Get("/monitor", monitor.New())
+	a.app.Get("/feeds/areas", handler.GetFeedAreas(a.repo))
+	a.app.Get("/feeds/:id/", handler.GetFeedById(a.repo))
+	// We need to set up authentication for POST /events endpoint.
+	a.app.Post("/events", handler.CreateEventHandler(a.kafkaProducer))
+	route := a.app.Group("/swagger")
+	route.Get("*", swagger.HandlerDefault)
+}
+
+// @title               IT Afet Yardım
+// @version             1.0
+// @description         Afet Harita API
+// @host                127.0.0.1:80
+// @BasePath            /
+// @schemes             http https
 func main() {
 	repo := repository.New()
 	defer repo.Close()
@@ -40,6 +66,7 @@ func main() {
 	app := fiber.New()
 	app.Use(cors.New())
 	app.Use(recover2.New())
+	app.Use(auth.New())
 	app.Use(func(c *fiber.Ctx) error {
 		if c.Path() == "/healthcheck" ||
 			c.Path() == "/metrics" ||
@@ -148,9 +175,8 @@ func main() {
 	app.Get("/needs", needsHandler.HandleList)
 	app.Post("/needs", needsHandler.HandleCreate)
 
-	app.Get("/healthcheck", func(ctx *fiber.Ctx) error {
-		return ctx.SendStatus(fiber.StatusOK)
-	})
+	application := &Application{app: app, repo: repo, kafkaProducer: kafkaProducer}
+	application.Register()
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)

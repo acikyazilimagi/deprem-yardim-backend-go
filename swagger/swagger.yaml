@@ -1,5 +1,37 @@
 basePath: /
 definitions:
+  feeds.Feed:
+    properties:
+      channel:
+        type: string
+      extra_parameters:
+        type: string
+      formatted_address:
+        type: string
+      full_text:
+        type: string
+      id:
+        type: integer
+      is_resolved:
+        type: boolean
+      timestamp:
+        type: string
+    type: object
+  feeds.Result:
+    properties:
+      entry_id:
+        type: integer
+      epoch:
+        type: integer
+      id:
+        type: integer
+      loc:
+        items:
+          type: number
+        type: array
+      timestamp:
+        type: string
+    type: object
   handler.request:
     properties:
       channel:
@@ -14,6 +46,49 @@ definitions:
       timestamp:
         type: integer
     type: object
+  needs.CreateNeedRequest:
+    properties:
+      address:
+        type: string
+      description:
+        type: string
+    required:
+    - address
+    - description
+    type: object
+  needs.LiteNeed:
+    properties:
+      id:
+        type: integer
+    type: object
+  needs.Need:
+    properties:
+      description:
+        type: string
+      extra_parameters:
+        type: string
+      formatted_address:
+        type: string
+      id:
+        type: integer
+      is_resolved:
+        type: boolean
+      loc:
+        items:
+          type: number
+        type: array
+      timestamp:
+        type: string
+    type: object
+  needs.Response:
+    properties:
+      count:
+        type: integer
+      results:
+        items:
+          $ref: '#/definitions/needs.Need'
+        type: array
+    type: object
 host: 127.0.0.1:80
 info:
   contact: {}
@@ -26,9 +101,9 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Payload
+      - description: RequestBody
         in: body
-        name: payload
+        name: body
         required: true
         schema:
           $ref: '#/definitions/handler.request'
@@ -37,9 +112,6 @@ paths:
       responses:
         "200":
           description: OK
-          schema:
-            additionalProperties: true
-            type: object
       summary: Create Event areas with request body
       tags:
       - Event
@@ -57,8 +129,7 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/feeds.Feed'
       summary: Get Feeds with given id
       tags:
       - Feed
@@ -69,26 +140,25 @@ paths:
         in: query
         name: sw_lat
         required: true
-        type: integer
+        type: number
       - description: Sw Lng
         in: query
         name: sw_lng
         required: true
-        type: integer
+        type: number
       - description: Ne Lat
         in: query
         name: ne_lat
         required: true
-        type: integer
+        type: number
       - description: Ne Lng
         in: query
         name: ne_lng
         required: true
-        type: integer
+        type: number
       - description: Timestamp
         in: query
         name: time_stamp
-        required: true
         type: integer
       produces:
       - application/json
@@ -96,8 +166,9 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            items:
+              $ref: '#/definitions/feeds.Result'
+            type: array
       summary: Get Feed areas with query strings
       tags:
       - Feed
@@ -116,6 +187,42 @@ paths:
       summary: Show the status of server.
       tags:
       - Healthcheck
+  /needs:
+    get:
+      parameters:
+      - description: Is Only Not Resolved
+        in: query
+        name: only_not_resolved
+        required: true
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/needs.Response'
+      summary: Get Needs
+      tags:
+      - Need
+    post:
+      parameters:
+      - description: RequestBody
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/needs.CreateNeedRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/needs.LiteNeed'
+      summary: Create Need
+      tags:
+      - Need
 schemes:
 - http
 - https

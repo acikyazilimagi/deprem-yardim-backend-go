@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-const ApiKeyHeaderName = "x-api-key"
+const ApiKeyHeaderName = "X-Api-Key"
 
 func New() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {

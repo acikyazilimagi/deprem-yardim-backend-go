@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"github.com/acikkaynak/backend-api-go/middleware/auth"
-
 	"log"
+
 	"net/http"
 	"os"
 	"os/signal"

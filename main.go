@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/acikkaynak/backend-api-go/handler"
-	"net/http"
+	"github.com/acikkaynak/backend-api-go/middleware/auth"
+
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
@@ -40,6 +41,7 @@ func main() {
 	app := fiber.New()
 	app.Use(cors.New())
 	app.Use(recover2.New())
+	app.Use(auth.New())
 	app.Use(func(c *fiber.Ctx) error {
 		if c.Path() == "/healthcheck" ||
 			c.Path() == "/metrics" ||

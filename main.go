@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/acikkaynak/backend-api-go/handler"
+	"net/http"
 	"log"
 	"os"
 	"os/signal"
@@ -28,6 +30,8 @@ func main() {
 	defer repo.Close()
 	cacheRepo := cache.NewRedisRepository()
 
+	needsHandler := handler.NewNeedsHandler(repo)
+
 	kafkaProducer, err := broker.NewProducer()
 	if err != nil {
 		log.Fatalf("failed to init kafka produder. err: %s", err)
@@ -45,14 +49,21 @@ func main() {
 
 		reqURI := c.OriginalURL()
 		hashURL := uuid.NewSHA1(uuid.NameSpaceOID, []byte(reqURI)).String()
+		if c.Method() != http.MethodGet {
+			// Don't cache write endpoints. We can maintain of list to exclude certain http methods later.
+			// Since there will be an update in db, better to remove cache entries for this url
+			err := cacheRepo.Delete(hashURL)
+			if err != nil {
+				fmt.Println(err)
+			}
+			return c.Next()
+		}
 		cacheData := cacheRepo.Get(hashURL)
-
 		if cacheData == nil {
 			c.Next()
 			cacheRepo.SetKey(hashURL, c.Response().Body(), 0)
 			return nil
 		}
-
 		return c.JSON(cacheData)
 	})
 
@@ -115,6 +126,9 @@ func main() {
 
 		return ctx.JSON(feed)
 	})
+
+	app.Get("/needs", needsHandler.HandleList)
+	app.Post("/needs", needsHandler.HandleCreate)
 
 	app.Get("/healthcheck", func(ctx *fiber.Ctx) error {
 		return ctx.SendStatus(fiber.StatusOK)

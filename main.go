@@ -2,30 +2,55 @@ package main
 
 import (
 	"fmt"
-	"github.com/acikkaynak/backend-api-go/middleware/auth"
-	"log"
-
-	"net/http"
-	"os"
-	"os/signal"
 	"strconv"
-	"syscall"
 	"time"
-
+	"github.com/Shopify/sarama"
 	"github.com/acikkaynak/backend-api-go/broker"
 	"github.com/acikkaynak/backend-api-go/cache"
-	"github.com/acikkaynak/backend-api-go/feeds"
 	"github.com/acikkaynak/backend-api-go/handler"
 	"github.com/acikkaynak/backend-api-go/repository"
+	_ "github.com/acikkaynak/backend-api-go/swagger"
+	swagger "github.com/arsmn/fiber-swagger/v2"
 	"github.com/gofiber/adaptor/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/monitor"
+  "github.com/acikkaynak/backend-api-go/middleware/auth"
 	recover2 "github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
+type Application struct {
+	app           *fiber.App
+	repo          *repository.Repository
+	kafkaProducer sarama.SyncProducer
+}
+
+func (a *Application) Register() {
+	a.app.Get("/", handler.RedirectSwagger)
+	a.app.Get("/healthcheck", handler.Healtcheck)
+	a.app.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
+	a.app.Get("/monitor", monitor.New())
+	a.app.Get("/feeds/areas", handler.GetFeedAreas(a.repo))
+	a.app.Get("/feeds/:id/", handler.GetFeedById(a.repo))
+	// We need to set up authentication for POST /events endpoint.
+	a.app.Post("/events", handler.CreateEventHandler(a.kafkaProducer))
+	route := a.app.Group("/swagger")
+	route.Get("*", swagger.HandlerDefault)
+}
+
+// @title               IT Afet Yardım
+// @version             1.0
+// @description         Afet Harita API
+// @host                127.0.0.1:80
+// @BasePath            /
+// @schemes             http https
 func main() {
 	repo := repository.New()
 	defer repo.Close()
@@ -69,72 +94,11 @@ func main() {
 		return c.JSON(cacheData)
 	})
 
-	// We need to set up authentication for POST /events endpoint.
-	app.Post("/events", handler.CreateEventHandler(kafkaProducer))
-
-	app.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
-
-	app.Get("/monitor", monitor.New())
-
-	app.Get("/feeds/areas", func(ctx *fiber.Ctx) error {
-		swLatStr := ctx.Query("sw_lat")
-		swLngStr := ctx.Query("sw_lng")
-		neLatStr := ctx.Query("ne_lat")
-		neLngStr := ctx.Query("ne_lng")
-		timeStampStr := ctx.Query("time_stamp")
-
-		var timestamp int64
-		if timeStampStr == "" {
-			timestamp = time.Now().AddDate(-1, -1, -1).Unix()
-		} else {
-			timeInt, err := strconv.ParseInt(timeStampStr, 10, 64)
-			if err != nil {
-				timestamp = time.Now().AddDate(-1, -1, -1).Unix()
-			} else {
-				timestamp = timeInt
-			}
-		}
-
-		swLat, _ := strconv.ParseFloat(swLatStr, 64)
-		swLng, _ := strconv.ParseFloat(swLngStr, 64)
-		neLat, _ := strconv.ParseFloat(neLatStr, 64)
-		neLng, _ := strconv.ParseFloat(neLngStr, 64)
-
-		data, err := repo.GetLocations(swLat, swLng, neLat, neLng, timestamp)
-		if err != nil {
-			return ctx.JSON(err)
-		}
-
-		resp := &feeds.Response{
-			Count:   len(data),
-			Results: data,
-		}
-
-		return ctx.JSON(resp)
-	})
-
-	app.Get("/feeds/:id/", func(ctx *fiber.Ctx) error {
-		feedIDStr := ctx.Params("id")
-
-		feedID, err := strconv.ParseInt(feedIDStr, 10, 64)
-		if err != nil {
-			return ctx.SendStatus(fiber.StatusBadRequest)
-		}
-
-		feed, err := repo.GetFeed(feedID)
-		if err != nil {
-			return ctx.JSON(err)
-		}
-
-		return ctx.JSON(feed)
-	})
-
 	app.Get("/needs", needsHandler.HandleList)
 	app.Post("/needs", needsHandler.HandleCreate)
 
-	app.Get("/healthcheck", func(ctx *fiber.Ctx) error {
-		return ctx.SendStatus(fiber.StatusOK)
-	})
+	application := &Application{app: app, repo: repo, kafkaProducer: kafkaProducer}
+	application.Register()
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)

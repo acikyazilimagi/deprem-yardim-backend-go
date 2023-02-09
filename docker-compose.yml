@@ -1,0 +1,50 @@
+version: "3.8"
+name: "deprem-yardim.go"
+services:
+  postgres-db:
+    image: "postgres:12.3-alpine"
+    container_name: "postgres-db"
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+  redis-db:
+    image: "redis:alpine"
+    container_name: "redis-db"
+    restart: always
+    ports:
+      - "6379:6379"
+  grafana:
+    image: "grafana/grafana:latest"
+    container_name: "grafana"
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - redis-db
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=grafana
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+  prometheus:
+    image: "prom/prometheus:v2.18.1"
+    container_name: "prometheus"
+    restart: always
+    ports:
+      - "9090:9090"
+    depends_on:
+      - redis-db
+  feeds:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: "feeds"
+    restart: always
+    ports:
+      - "8080:80"
+    environment:
+      DB_CONN_STR: "postgres://postgres:postgres@postgres-db:5432/postgres?sslmode=disable"
+      REDIS_ADDR: "redis-db"
+      REDIS_PASS: 

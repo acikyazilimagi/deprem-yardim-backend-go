@@ -36,7 +36,9 @@ Prometheus: `docker run -it -d --name prometheus -p 9090:9090 -v $PWD:/etc/prome
 
 ![metrics](/docs/metrics.png)
 
-### Refresh Swagger
+### Swagger
+![swagger](/docs/swagger.png)
+swagger klasörü altındaki dosyaları güncellemek için bash:
 ```
 swag init --output swagger 
 ```

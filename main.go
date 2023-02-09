@@ -89,6 +89,24 @@ func main() {
 		return ctx.JSON(resp)
 	})
 
+  app.Get("/feeds/busy", func(ctx *fiber.Ctx) error {
+    // lat, lng values for Türkiye general
+		swLat := 33.00078438676349
+		swLng := 28.320286863630532
+    neLat := 42.74921492471125
+		neLng := 43.39119067163482 
+    timestamp := time.Now().AddDate(-1, -1, -1).Unix()
+
+    data, err := repo.GetLocations(swLat, swLng, neLat, neLng, timestamp)
+    if err != nil {
+      return ctx.JSON(err)
+    }
+
+    result = repo.GetBusyLocation(data)
+
+    return result, nil
+  })
+
 	app.Get("/feeds/:id/", func(ctx *fiber.Ctx) error {
 		feedIDStr := ctx.Params("id")
 

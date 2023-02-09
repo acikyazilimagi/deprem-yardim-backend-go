@@ -47,6 +47,26 @@ func (repo *Repository) Close() {
 	repo.pool.Close()
 }
 
+func (repo *Repository) GetBusyLocation(data []feeds.Result, timestamp int64) (feeds.LatLng) {
+  count = len(data)
+  totalLat = 0.0
+  totalLng = 0.0
+  for _, result := range data {
+    lat = result.Loc[0]
+    lng = result.Loc[1]
+    totalLat += lat
+    totalLng += lng
+  }
+  avgLat = totalLat / count
+  avgLng = totalLng / count
+  
+  var result feeds.LatLng
+  result.Lat = avgLat
+  result.Lng = avgLng
+
+  return result
+}
+
 func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timestamp int64) ([]feeds.Result, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()

@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
+	"time"
 
 	"github.com/acikkaynak/backend-api-go/cache"
 	"github.com/acikkaynak/backend-api-go/feeds"
@@ -56,13 +57,26 @@ func main() {
 		swLngStr := ctx.Query("sw_lng")
 		neLatStr := ctx.Query("ne_lat")
 		neLngStr := ctx.Query("ne_lng")
+		timeStampStr := ctx.Query("time_stamp")
+
+		var timestamp int64
+		if timeStampStr == "" {
+			timestamp = time.Now().AddDate(-1, -1, -1).Unix()
+		} else {
+			timeInt, err := strconv.ParseInt(timeStampStr, 10, 64)
+			if err != nil {
+				timestamp = time.Now().AddDate(-1, -1, -1).Unix()
+			} else {
+				timestamp = timeInt
+			}
+		}
 
 		swLat, _ := strconv.ParseFloat(swLatStr, 64)
 		swLng, _ := strconv.ParseFloat(swLngStr, 64)
 		neLat, _ := strconv.ParseFloat(neLatStr, 64)
 		neLng, _ := strconv.ParseFloat(neLngStr, 64)
 
-		data, err := repo.GetLocations(swLat, swLng, neLat, neLng)
+		data, err := repo.GetLocations(swLat, swLng, neLat, neLng, timestamp)
 		if err != nil {
 			return ctx.JSON(err)
 		}

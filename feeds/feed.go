@@ -5,13 +5,13 @@ import (
 )
 
 type Feed struct {
-	ID              int64     `json:"id,omitempty"`
-	FullText        string    `json:"full_text"`
-	IsResolved      bool      `json:"is_resolved"`
-	Channel         string    `json:"channel,omitempty"`
-	Timestamp       time.Time `json:"timestamp"`
-	ExtraParameters *string   `json:"extra_parameters,omitempty"`
-	FormattedAddress string   `json:"formatted_address,omitempty"`
+	ID               int64     `json:"id,omitempty"`
+	FullText         string    `json:"full_text"`
+	IsResolved       bool      `json:"is_resolved"`
+	Channel          string    `json:"channel,omitempty"`
+	Timestamp        time.Time `json:"timestamp,omitempty"`
+	ExtraParameters  *string   `json:"extra_parameters,omitempty"`
+	FormattedAddress string    `json:"formatted_address,omitempty"`
 }
 
 type LatLng struct {
@@ -20,14 +20,16 @@ type LatLng struct {
 }
 
 type Result struct {
-	ID               int64     `json:"id"`
-	Loc              []float64 `json:"loc"`
-	Entry_ID	     int64 	   `json:"entry_id"`
+	ID        int64     `json:"id"`
+	Loc       []float64 `json:"loc"`
+	Entry_ID  int64     `json:"entry_id"`
+	Timestamp *string   `json:"timestamp,omitempty"`
+	Epoch     int64     `json:"epoch,omitempty"`
 }
 
 type LiteResult struct {
-	ID               int64     `json:"id"`
-	Loc              []float64 `json:"loc"`
+	ID  int64     `json:"id"`
+	Loc []float64 `json:"loc"`
 }
 
 type Response struct {

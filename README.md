@@ -8,9 +8,9 @@
 
 ### /feeds/areas
 
-**Query Params**: `sw_lat` `sw_lng` `ne_lat` `ne_lng`
+**Query Params**: `sw_lat` `sw_lng` `ne_lat` `ne_lng` `timestamp`
 
-İşlenmiş lokasyon verisini afetharita.com adresine döner.
+İşlenmiş lokasyon verisini afetharita.com adresine lokasyon ve timestamp bilgisine göre döner. Eğer timestamp alanı boş geçilirse son 1 yıla ait kayıtlar döner.
 
 ### /feeds/:id
 

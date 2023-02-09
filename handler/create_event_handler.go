@@ -9,15 +9,23 @@ import (
 	"github.com/google/uuid"
 )
 
-func CreateEventHandler(producer sarama.SyncProducer) fiber.Handler {
-	type request struct {
-		ID        string         `json:"id"`
-		Payload   string         `json:"payload"`
-		Channel   string         `json:"channel"`
-		Metadata  map[string]any `json:"metadata"`
-		Timestamp int64          `json:"timestamp"`
-	}
+type request struct {
+	ID        string         `json:"id"`
+	Payload   string         `json:"payload"`
+	Channel   string         `json:"channel"`
+	Metadata  map[string]any `json:"metadata"`
+	Timestamp int64          `json:"timestamp"`
+}
 
+// createEvent godoc
+// @Summary            Create Event areas with request body
+// @Tags               Event
+// @Accept             json
+// @Produce            json
+// @Success            200 {object} map[string]interface{}
+// @Param              payload body request true "Payload"
+// @Router             /events [POST]
+func CreateEventHandler(producer sarama.SyncProducer) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		var req request
 

@@ -18,3 +18,5 @@ Değerlendirdiğiniz herhangi bir alternatif çözüm veya özellik hakkında a�
 
 ## Ek Bağlam
 Bu özellik isteği hakkında herhangi bir başka bağlam veya ekran görüntüsü ekleyin.
+
+## Varsa eğer sistem dizayn öneri görseli

@@ -48,7 +48,7 @@ func (repo *Repository) Close() {
 	repo.pool.Close()
 }
 
-func (repo *Repository) GetBusyLocation(data []feeds.Result, timestamp int64) (feeds.LatLng) {
+func (repo *Repository) GetBusyLocation(data []feeds.Result) (feeds.LatLng) {
   count = len(data)
   totalLat = 0.0
   totalLng = 0.0

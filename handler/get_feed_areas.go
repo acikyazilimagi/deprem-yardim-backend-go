@@ -13,11 +13,11 @@ import (
 // @Tags               Feed
 // @Produce            json
 // @Success            200 {object} map[string]interface{}
-// @Param              sw_lat query integer true "Sw Lat"
-// @Param              sw_lng query integer true "Sw Lng"
-// @Param              ne_lat query integer true "Ne Lat"
-// @Param              ne_lng query integer true "Ne Lng"
-// @Param              time_stamp query integer true "Timestamp"
+// @Param              sw_lat query number true "Sw Lat"
+// @Param              sw_lng query number true "Sw Lng"
+// @Param              ne_lat query number true "Ne Lat"
+// @Param              ne_lng query number true "Ne Lng"
+// @Param              time_stamp query integer false "Timestamp"
 // @Router             /feeds/areas [GET]
 func GetFeedAreas(repo *repository.Repository) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {

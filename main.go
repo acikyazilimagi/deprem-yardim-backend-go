@@ -53,24 +53,30 @@ func main() {
 	app.Get("/monitor", monitor.New())
 
 	app.Get("/feeds/areas", func(ctx *fiber.Ctx) error {
-		layout := "2006-01-02T15:04:05.000-03:00"
-
 		swLatStr := ctx.Query("sw_lat")
 		swLngStr := ctx.Query("sw_lng")
 		neLatStr := ctx.Query("ne_lat")
 		neLngStr := ctx.Query("ne_lng")
 		timeStampStr := ctx.Query("time_stamp")
 
+		var timestamp int64
+		if timeStampStr == "" {
+			timestamp = time.Now().AddDate(-1, -1, -1).Unix()
+		} else {
+			timeInt, err := strconv.ParseInt(timeStampStr, 10, 64)
+			if err != nil {
+				timestamp = time.Now().AddDate(-1, -1, -1).Unix()
+			} else {
+				timestamp = timeInt
+			}
+		}
+
 		swLat, _ := strconv.ParseFloat(swLatStr, 64)
 		swLng, _ := strconv.ParseFloat(swLngStr, 64)
 		neLat, _ := strconv.ParseFloat(neLatStr, 64)
 		neLng, _ := strconv.ParseFloat(neLngStr, 64)
-		dataTime, err := time.Parse(layout, timeStampStr)
-		if err != nil {
-			fmt.Sprintf("time parse error %s", err)
-		}
 
-		data, err := repo.GetLocations(swLat, swLng, neLat, neLng, dataTime)
+		data, err := repo.GetLocations(swLat, swLng, neLat, neLng, timestamp)
 		if err != nil {
 			return ctx.JSON(err)
 		}

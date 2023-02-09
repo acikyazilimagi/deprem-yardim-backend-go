@@ -16,11 +16,13 @@ var (
 		"latitude, " +
 		"longitude, " +
 		"entry_id " +
+		"timestamp " +
 		"FROM feeds_location " +
 		"where southwest_lat >= %f " +
 		"and southwest_lng >= %f " +
 		"and northeast_lat <= %f " +
-		"and northeast_lng <= %f"
+		"and northeast_lng <= %f " +
+		"and timestamp >= %s"
 )
 
 type Repository struct {
@@ -44,11 +46,11 @@ func (repo *Repository) Close() {
 	repo.pool.Close()
 }
 
-func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64) ([]feeds.Result, error) {
+func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, dataTime time.Time) ([]feeds.Result, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	query, err := repo.pool.Query(ctx, fmt.Sprintf(getLocationsQuery, swLat, swLng, neLat, neLng))
+	query, err := repo.pool.Query(ctx, fmt.Sprintf(getLocationsQuery, swLat, swLng, neLat, neLng, dataTime.String()))
 	if err != nil {
 		return nil, fmt.Errorf("could not query locations: %w", err)
 	}
@@ -62,7 +64,8 @@ func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64) ([]feed
 		err := query.Scan(&result.ID,
 			&result.Loc[0],
 			&result.Loc[1],
-			&result.Entry_ID)
+			&result.Entry_ID,
+			&result.Timestamp)
 		if err != nil {
 			continue
 			//return nil, fmt.Errorf("could not scan locations: %w", err)
@@ -78,9 +81,9 @@ func (repo *Repository) GetFeed(id int64) (*feeds.Feed, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	row := repo.pool.QueryRow(ctx, fmt.Sprintf(
-		"SELECT fe.id, full_text, is_resolved, channel, fe.timestamp, fe.extra_parameters, fl.formatted_address " + 
-		"FROM feeds_entry fe, feeds_location fl " + 
-		"WHERE fe.id = fl.entry_id AND fe.id=%d", id))
+		"SELECT fe.id, full_text, is_resolved, channel, fe.timestamp, fe.extra_parameters, fl.formatted_address "+
+			"FROM feeds_entry fe, feeds_location fl "+
+			"WHERE fe.id = fl.entry_id AND fe.id=%d", id))
 
 	var feed feeds.Feed
 	if err := row.Scan(&feed.ID, &feed.FullText, &feed.IsResolved, &feed.Channel, &feed.Timestamp, &feed.ExtraParameters, &feed.FormattedAddress); err != nil {

@@ -62,3 +62,36 @@ func (h *NeedsHandler) HandleList(ctx *fiber.Ctx) error {
 
 	return ctx.JSON(resp)
 }
+
+// HandleTimestampList godoc
+// @Summary            Get Needs after the given timestamp
+// @Tags               Need
+// @Produce            json
+// @Success            200 {object} needs.Response
+// @Param              only_not_resolved query bool true "Is Only Not Resolved"
+// @Router             /needs [GET]
+func (h *NeedsHandler) HandleTimestampList(ctx *fiber.Ctx) error {
+	onlyNotResolvedStr := ctx.Query("only_not_resolved")
+	onlyNotResolved, _ := strconv.ParseBool(onlyNotResolvedStr)
+
+	timestampString := ctx.Params("timestamp")
+
+	timestampInt, err := strconv.ParseInt(timestampString, 10, 64)
+
+    if err != nil {
+        timestampInt = 0
+    }
+
+	data, err := h.repo.GetTimestampFilteredNeeds(onlyNotResolved, timestampInt)
+
+	if err != nil {
+		return ctx.JSON(err)
+	}
+
+	resp := &needs.Response{
+		Count:   len(data),
+		Results: data,
+	}
+
+	return ctx.JSON(resp)
+}

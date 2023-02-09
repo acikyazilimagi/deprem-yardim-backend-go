@@ -93,6 +93,7 @@ func main() {
 	})
 
 	app.Get("/needs", needsHandler.HandleList)
+	app.Get("/needs/:timestamp/", needsHandler.HandleTimestampList)
 	app.Post("/needs", needsHandler.HandleCreate)
 
 	application := &Application{app: app, repo: repo, kafkaProducer: kafkaProducer}

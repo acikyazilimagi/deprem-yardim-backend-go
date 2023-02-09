@@ -101,9 +101,47 @@ func (repo *Repository) GetNeeds(onlyNotResolved bool) ([]needs.Need, error) {
 	defer cancel()
 
 	q := "SELECT n.id, n.description, n.is_resolved, n.timestamp, n.extra_parameters, n.formatted_address, n.latitude, n.longitude " +
-		"FROM needs n"
+		"FROM needs n "
 	if onlyNotResolved {
 		q = fmt.Sprintf("%s WHERE n.is_resolved=false", q)
+	}
+	query, err := repo.pool.Query(ctx, q)
+	if err != nil {
+		return nil, fmt.Errorf("could not query needs: %w", err)
+	}
+
+	var results []needs.Need
+	for query.Next() {
+		var result needs.Need
+		result.Loc = make([]float64, 2)
+
+		err := query.Scan(&result.ID,
+			&result.Description,
+			&result.IsResolved,
+			&result.Timestamp,
+			&result.ExtraParameters,
+			&result.FormattedAddress,
+			&result.Loc[0],
+			&result.Loc[1])
+		if err != nil {
+			continue
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+func (repo *Repository) GetTimestampFilteredNeeds(onlyNotResolved bool, timestamp int64) ([]needs.Need, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	q := fmt.Sprintf("SELECT n.id, n.description, n.is_resolved, n.timestamp, n.extra_parameters, n.formatted_address, n.latitude, n.longitude " +
+		"FROM needs n WHERE n.timestamp >= %d", timestamp)
+
+	if onlyNotResolved {
+		q = fmt.Sprintf("%s AND n.is_resolved=false", q)
 	}
 	query, err := repo.pool.Query(ctx, q)
 	if err != nil {

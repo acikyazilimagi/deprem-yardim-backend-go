@@ -23,6 +23,7 @@ Tekil bir işlenmemiş twitter verisini döner.
 Redis: `docker run -d --name redis-stack-server -p 6379:6379 redis/redis-stack-server:latest`
 
 Grafana: `docker run --name grafana -i -p 3000:3000 grafana/grafana`
+[Dashboard](https://grafana.com/grafana/dashboards/6671-go-processes/)
 
 Prometheus: `docker run -it -d --name prometheus -p 9090:9090 -v $PWD:/etc/prometheus prom/prometheus --config.file=/etc/prometheus/prometheus.yml`
 

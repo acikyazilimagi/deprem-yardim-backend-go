@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"strconv"
+	"time"
 	"github.com/Shopify/sarama"
 	"github.com/acikkaynak/backend-api-go/broker"
 	"github.com/acikkaynak/backend-api-go/cache"
@@ -13,6 +15,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/monitor"
+  "github.com/acikkaynak/backend-api-go/middleware/auth"
 	recover2 "github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -63,6 +66,7 @@ func main() {
 	app := fiber.New()
 	app.Use(cors.New())
 	app.Use(recover2.New())
+	app.Use(auth.New())
 	app.Use(func(c *fiber.Ctx) error {
 		if c.Path() == "/healthcheck" ||
 			c.Path() == "/metrics" ||

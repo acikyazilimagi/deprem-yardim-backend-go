@@ -22,8 +22,8 @@ type request struct {
 // @Tags               Event
 // @Accept             json
 // @Produce            json
-// @Success            200 {object} map[string]interface{}
-// @Param              payload body request true "Payload"
+// @Success            200 {object} nil
+// @Param              body body request true "RequestBody"
 // @Router             /events [POST]
 func CreateEventHandler(producer sarama.SyncProducer) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {

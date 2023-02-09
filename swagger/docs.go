@@ -29,8 +29,8 @@ const docTemplate = `{
                 "summary": "Create Event areas with request body",
                 "parameters": [
                     {
-                        "description": "Payload",
-                        "name": "payload",
+                        "description": "RequestBody",
+                        "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -40,11 +40,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
+                        "description": "OK"
                     }
                 }
             }
@@ -60,28 +56,28 @@ const docTemplate = `{
                 "summary": "Get Feed areas with query strings",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "number",
                         "description": "Sw Lat",
                         "name": "sw_lat",
                         "in": "query",
                         "required": true
                     },
                     {
-                        "type": "integer",
+                        "type": "number",
                         "description": "Sw Lng",
                         "name": "sw_lng",
                         "in": "query",
                         "required": true
                     },
                     {
-                        "type": "integer",
+                        "type": "number",
                         "description": "Ne Lat",
                         "name": "ne_lat",
                         "in": "query",
                         "required": true
                     },
                     {
-                        "type": "integer",
+                        "type": "number",
                         "description": "Ne Lng",
                         "name": "ne_lng",
                         "in": "query",
@@ -91,16 +87,17 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "Timestamp",
                         "name": "time_stamp",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/feeds.Result"
+                            }
                         }
                     }
                 }
@@ -128,8 +125,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/feeds.Feed"
                         }
                     }
                 }
@@ -157,9 +153,114 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/needs": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Need"
+                ],
+                "summary": "Get Needs",
+                "parameters": [
+                    {
+                        "type": "boolean",
+                        "description": "Is Only Not Resolved",
+                        "name": "only_not_resolved",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/needs.Response"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Need"
+                ],
+                "summary": "Create Need",
+                "parameters": [
+                    {
+                        "description": "RequestBody",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/needs.CreateNeedRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/needs.LiteNeed"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "feeds.Feed": {
+            "type": "object",
+            "properties": {
+                "channel": {
+                    "type": "string"
+                },
+                "extra_parameters": {
+                    "type": "string"
+                },
+                "formatted_address": {
+                    "type": "string"
+                },
+                "full_text": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_resolved": {
+                    "type": "boolean"
+                },
+                "timestamp": {
+                    "type": "string"
+                }
+            }
+        },
+        "feeds.Result": {
+            "type": "object",
+            "properties": {
+                "entry_id": {
+                    "type": "integer"
+                },
+                "epoch": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "loc": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "timestamp": {
+                    "type": "string"
+                }
+            }
+        },
         "handler.request": {
             "type": "object",
             "properties": {
@@ -178,6 +279,72 @@ const docTemplate = `{
                 },
                 "timestamp": {
                     "type": "integer"
+                }
+            }
+        },
+        "needs.CreateNeedRequest": {
+            "type": "object",
+            "required": [
+                "address",
+                "description"
+            ],
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                }
+            }
+        },
+        "needs.LiteNeed": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "needs.Need": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "extra_parameters": {
+                    "type": "string"
+                },
+                "formatted_address": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_resolved": {
+                    "type": "boolean"
+                },
+                "loc": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "timestamp": {
+                    "type": "string"
+                }
+            }
+        },
+        "needs.Response": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/needs.Need"
+                    }
                 }
             }
         }

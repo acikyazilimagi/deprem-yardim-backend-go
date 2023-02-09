@@ -19,6 +19,14 @@
 
 Tekil bir işlenmemiş twitter verisini döner.
 
+### /feeds/busy
+
+**Query Params**: `time_stamp`
+
+Haritadaki lokasyonların ortalamasını alarak yoğun olan bölgeyi hesaplar ve lokasyon verisini döner. Eğer timestamp alanı boş geçilirse son 1 yıla ait lokasyonların ortalamasını alarak yoğun olan bölgeyi hesaplar ve lokasyon verisini döner.
+
+**Örnek Request** : `/feeds/busy?time_stamp=1675807028`
+
 ### Run Locally
 
 Redis: `docker run -d --name redis-stack-server -p 6379:6379 redis/redis-stack-server:latest`

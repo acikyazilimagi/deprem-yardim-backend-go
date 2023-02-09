@@ -2,14 +2,17 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
 	"time"
 
+	"github.com/acikkaynak/backend-api-go/broker"
 	"github.com/acikkaynak/backend-api-go/cache"
 	"github.com/acikkaynak/backend-api-go/feeds"
+	"github.com/acikkaynak/backend-api-go/handler"
 	"github.com/acikkaynak/backend-api-go/repository"
 	"github.com/gofiber/adaptor/v2"
 	"github.com/gofiber/fiber/v2"
@@ -24,6 +27,11 @@ func main() {
 	repo := repository.New()
 	defer repo.Close()
 	cacheRepo := cache.NewRedisRepository()
+
+	kafkaProducer, err := broker.NewProducer()
+	if err != nil {
+		log.Fatalf("failed to init kafka produder. err: %s", err)
+	}
 
 	app := fiber.New()
 	app.Use(cors.New())
@@ -47,6 +55,9 @@ func main() {
 
 		return c.JSON(cacheData)
 	})
+
+	// We need to set up authentication for POST /events endpoint.
+	app.Post("/events", handler.CreateEventHandler(kafkaProducer))
 
 	app.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
 

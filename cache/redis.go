@@ -50,3 +50,12 @@ func (repository *RedisRepository) Get(key string) interface{} {
 
 	return data
 }
+
+func (repository *RedisRepository) Delete(key string) error {
+	status := repository.client.Del(key)
+	if status.Err() != nil {
+		return status.Err()
+	}
+
+	return nil
+}

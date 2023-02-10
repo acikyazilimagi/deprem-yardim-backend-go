@@ -21,7 +21,8 @@ var (
 		"entry_id, " +
 		"timestamp, " +
 		"epoch, " +
-		"reason " +
+		"reason, " +
+		"channel " +
 		"FROM feeds_location " +
 		"where southwest_lat >= %f " +
 		"and southwest_lng >= %f " +
@@ -51,11 +52,18 @@ func (repo *Repository) Close() {
 	repo.pool.Close()
 }
 
-func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timestamp int64) ([]feeds.Result, error) {
+func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timestamp int64, reason, channel string) ([]feeds.Result, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	query, err := repo.pool.Query(ctx, fmt.Sprintf(getLocationsQuery, swLat, swLng, neLat, neLng, timestamp))
+	q := fmt.Sprintf(getLocationsQuery, swLat, swLng, neLat, neLng, timestamp)
+	if reason != "" {
+		q = fmt.Sprintf("%s and reason = '%s'", q, reason)
+	}
+	if channel != "" {
+		q = fmt.Sprintf("%s and channel = '%s'", q, channel)
+	}
+	query, err := repo.pool.Query(ctx, q)
 	if err != nil {
 		return nil, fmt.Errorf("could not query locations: %w", err)
 	}
@@ -72,10 +80,11 @@ func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timesta
 			&result.Entry_ID,
 			&result.Timestamp,
 			&result.Epoch,
-			&result.Reason)
+			&result.Reason,
+			&result.Channel)
 		if err != nil {
 			continue
-			//return nil, fmt.Errorf("could not scan locations: %w", err)
+			// return nil, fmt.Errorf("could not scan locations: %w", err)
 		}
 
 		results = append(results, result)

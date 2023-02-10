@@ -1,23 +1,28 @@
-version: '3'
+version: '3.9'
 
 services:
+  consumer:
+    build:
+      dockerfile: ./Dockerfile.consumer
+      context: .
+    environment:
+      KAFKA_BROKERS: kafka:9092
+      DB_CONN_STR: postgres://postgres:s3cr3t@postgresql:5432/postgres
+    depends_on:
+      - kafka
+      - postgres
 
-#  consumer:
-#    build: .
-#    entrypoint: /consumer
-#    environment:
-#      KAFKA_BROKERS: kafka:9092
-#    depends_on:
-#      - kafka
-#
-#  api:
-#    build: .
-#    entrypoint: /api
-#    environment:
-#      KAFKA_BROKERS: kafka:9092
-#    depends_on:
-#      - kafka
- 
+  api:
+    build: .
+    environment:
+      KAFKA_BROKERS: kafka:9092
+      DB_CONN_STR: postgres://postgres:s3cr3t@postgresql:5432/postgres
+      RedisAddr: redis:6379
+    depends_on:
+      - kafka
+      - postgres
+      - redis
+
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
     environment:
@@ -53,3 +58,20 @@ services:
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+
+  postgres:
+    image: postgres:15.1
+    environment:
+      POSTGRES_PASSWORD: s3cr3t
+    healthcheck:
+      test: [ "CMD", "pg_isready" ,"-U", "postgres", "-h", "127.0.0.1", "-p", "5432" ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - ./resources/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - 5435:5432
+
+  redis:
+    image: redis:latest

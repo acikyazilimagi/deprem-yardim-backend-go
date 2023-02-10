@@ -53,4 +53,4 @@ jobs:
         task-definition: ${{ steps.task-def.outputs.task-definition }}
         service: api-go-service
         cluster: base-cluster
-        wait-for-service-stability: true
+        wait-for-service-stability: false

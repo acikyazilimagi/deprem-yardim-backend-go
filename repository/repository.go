@@ -51,11 +51,15 @@ func (repo *Repository) Close() {
 	repo.pool.Close()
 }
 
-func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timestamp int64) ([]feeds.Result, error) {
+func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timestamp int64, reason string) ([]feeds.Result, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	query, err := repo.pool.Query(ctx, fmt.Sprintf(getLocationsQuery, swLat, swLng, neLat, neLng, timestamp))
+	q := fmt.Sprintf(getLocationsQuery, swLat, swLng, neLat, neLng, timestamp)
+	if reason != "" {
+		q = fmt.Sprintf("%s and reason = '%s'", q, reason)
+	}
+	query, err := repo.pool.Query(ctx, q)
 	if err != nil {
 		return nil, fmt.Errorf("could not query locations: %w", err)
 	}

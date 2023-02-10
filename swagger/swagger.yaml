@@ -23,6 +23,8 @@ definitions:
     type: object
   feeds.Result:
     properties:
+      channel:
+        type: string
       entry_id:
         type: integer
       epoch:
@@ -42,14 +44,14 @@ definitions:
     properties:
       channel:
         type: string
+      epoch:
+        type: integer
       extra_parameters:
         type: string
       id:
         type: string
       raw_text:
         type: string
-      timestamp:
-        type: integer
     type: object
   needs.CreateNeedRequest:
     properties:
@@ -94,7 +96,6 @@ definitions:
           $ref: '#/definitions/needs.Need'
         type: array
     type: object
-host: 127.0.0.1:80
 info:
   contact: {}
   description: Afet Harita API
@@ -165,6 +166,14 @@ paths:
         in: query
         name: time_stamp
         type: integer
+      - description: Reason
+        in: query
+        name: reason
+        type: string
+      - description: Channel
+        in: query
+        name: channel
+        type: string
       produces:
       - application/json
       responses:

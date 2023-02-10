@@ -36,12 +36,13 @@ func IsValidChannel(key string) bool {
 // @Tags               Feed
 // @Produce            json
 // @Success            200 {object} []feeds.Result
-
 // @Param              sw_lat query number true "Sw Lat"
 // @Param              sw_lng query number true "Sw Lng"
 // @Param              ne_lat query number true "Ne Lat"
 // @Param              ne_lng query number true "Ne Lng"
 // @Param              time_stamp query integer false "Timestamp"
+// @Param              reason query string false "Reason",
+// @Param              channel query string false "Channel"
 // @Router             /feeds/areas [GET]
 func GetFeedAreas(repo *repository.Repository) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {

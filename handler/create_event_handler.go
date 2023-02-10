@@ -15,7 +15,7 @@ type request struct {
 	RawText         string `json:"raw_text"`
 	Channel         string `json:"channel"`
 	ExtraParameters string `json:"extra_parameters"`
-	Epoch           int64  `json:"timestamp"`
+	Epoch           int64  `json:"epoch"`
 }
 
 // createEvent godoc

@@ -61,5 +61,5 @@ docker run --entrypoint "/consumer" <image_name>
 swagger klasörü altındaki dosyaları güncellemek için bash:
 
 ```
-swag init -g cmd/api/main.go --output swagger .
+swag init -g cmd/api/main.go --output swagger
 ```

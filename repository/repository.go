@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/jackc/pgx/v5"
 	"os"
 	"time"
 
@@ -87,6 +88,7 @@ func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timesta
 func (repo *Repository) GetFeed(id int64) (*feeds.Feed, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
+
 	row := repo.pool.QueryRow(ctx, fmt.Sprintf(
 		"SELECT fe.id, full_text, is_resolved, channel, fe.timestamp, fe.extra_parameters, fl.formatted_address, fl.reason "+
 			"FROM feeds_entry fe, feeds_location fl "+
@@ -157,6 +159,81 @@ func (repo *Repository) CreateNeed(address, description string) (int64, error) {
 	err := repo.pool.QueryRow(ctx, q, address, description, time.Now(), false, "", 0, 0).Scan(&id)
 	if err != nil {
 		return id, fmt.Errorf("could not query needs: %w", err)
+	}
+
+	return id, nil
+}
+
+func (repo *Repository) CreateFeed(ctx context.Context, feed feeds.Feed, location feeds.Location) error {
+	tx, err := repo.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("error transaction begin stage %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	if _, err = repo.createFeedEntry(ctx, tx, feed); err != nil {
+		return err
+	}
+
+	if _, err = repo.createFeedLocation(ctx, tx, location); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("error transaction commit stage %w", err)
+	}
+
+	return nil
+}
+
+func (repo *Repository) createFeedEntry(ctx context.Context, tx pgx.Tx, feed feeds.Feed) (int64, error) {
+	q := `INSERT INTO feeds_entry (
+				full_text, is_resolved, channel, 
+				extra_parameters, "timestamp", epoch,
+				is_geolocated, reason
+			)
+			values (
+				$1, $2, $3,
+				$4, $5, $6,
+				$7, $8
+			) RETURNING id;`
+
+	var id int64
+	err := tx.QueryRow(ctx, q,
+		feed.FullText, feed.IsResolved, feed.Channel,
+		feed.ExtraParameters, feed.Timestamp, feed.Epoch,
+		false, feed.Reason).Scan(&id)
+	if err != nil {
+		return 0, fmt.Errorf("could not insert feeds entry: %w", err)
+	}
+
+	return id, nil
+}
+
+func (repo *Repository) createFeedLocation(ctx context.Context, tx pgx.Tx, location feeds.Location) (int64, error) {
+	q := `INSERT INTO feeds_location (
+			formatted_address, 
+			latitude, longitude, 
+			northeast_lat, northeast_lng, 
+			southwest_lat, southwest_lng, 
+			entry_id, "timestamp", 
+			epoch, reason, channel
+		) values (
+			$1, $2, $3, $4, $5, $6, $7,
+			$8, $9, $10, $11, $12
+		) RETURNING id;`
+
+	var id int64
+	err := tx.QueryRow(ctx, q,
+		location.FormattedAddress,
+		location.Latitude, location.Longitude,
+		location.NortheastLat, location.NortheastLng,
+		location.SouthwestLat, location.SouthwestLng,
+		location.EntryID, location.Timestamp,
+		location.Epoch, location.Reason, location.Channel,
+	).Scan(&id)
+	if err != nil {
+		return 0, fmt.Errorf("could not insert feeds location: %w", err)
 	}
 
 	return id, nil

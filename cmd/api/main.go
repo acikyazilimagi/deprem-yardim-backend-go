@@ -99,7 +99,7 @@ func main() {
 	application.Register()
 
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
+	signal.Notify(c, syscall.SIGINT)
 	signal.Notify(c, syscall.SIGTERM)
 
 	go func() {

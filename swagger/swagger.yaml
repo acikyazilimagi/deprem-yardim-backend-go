@@ -4,6 +4,8 @@ definitions:
     properties:
       channel:
         type: string
+      epoch:
+        type: integer
       extra_parameters:
         type: string
       formatted_address:
@@ -14,6 +16,8 @@ definitions:
         type: integer
       is_resolved:
         type: boolean
+      reason:
+        type: string
       timestamp:
         type: string
     type: object
@@ -29,6 +33,8 @@ definitions:
         items:
           type: number
         type: array
+      reason:
+        type: string
       timestamp:
         type: string
     type: object
@@ -36,12 +42,11 @@ definitions:
     properties:
       channel:
         type: string
+      extra_parameters:
+        type: string
       id:
         type: string
-      metadata:
-        additionalProperties: {}
-        type: object
-      payload:
+      raw_text:
         type: string
       timestamp:
         type: integer

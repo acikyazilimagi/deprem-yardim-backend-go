@@ -7,7 +7,7 @@ assignees: ''
 
 ---
 
-## İsteğiniz şeyi tanımlayın 
+## İstediğiniz özellikleri tanımlayın 
 Açık ve kısa bir şekilde istediğiniz feature'ın ne olduğunu tanımlayın.
 
 -- bu bilgiyi ekleyiniz

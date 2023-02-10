@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -116,10 +115,6 @@ func sendIntentResolveRequest(fullText string, feedID int64) (string, error) {
 
 	resp, err := http.DefaultClient.Do(req)
 	if resp.StatusCode != http.StatusOK {
-
-		readed, _ := io.ReadAll(resp.Body)
-		fmt.Println(string(readed))
-
 		fmt.Fprintf(os.Stderr, "could not get response IntentMessagePayload feedID %d status %d", feedID, resp.StatusCode)
 		return "", err
 	}
@@ -159,7 +154,19 @@ func (consumer *Consumer) addressResolveHandle(message *sarama.ConsumerMessage, 
 
 	messagePayload.Feed.Timestamp = time.Now()
 
-	err := consumer.repo.CreateFeed(ctx, messagePayload.Feed, messagePayload.Location)
+	f := feeds.Feed{
+		ID:               messagePayload.Feed.ID,
+		FullText:         messagePayload.Feed.FullText,
+		IsResolved:       messagePayload.Feed.IsResolved,
+		Channel:          messagePayload.Feed.Channel,
+		Timestamp:        messagePayload.Feed.Timestamp,
+		Epoch:            messagePayload.Feed.Epoch,
+		ExtraParameters:  messagePayload.Feed.ExtraParameters,
+		FormattedAddress: messagePayload.Feed.FormattedAddress,
+		Reason:           messagePayload.Feed.Reason,
+	}
+
+	err := consumer.repo.CreateFeed(ctx, f, messagePayload.Location)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error inserting feed entry and location message %#v error %s rawMessage %s", messagePayload, err.Error(), string(message.Value))
 		return
@@ -235,9 +242,21 @@ func (consumer *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, clai
 	}
 }
 
+type FeedMessage struct {
+	ID               int64     `json:"id,omitempty"`
+	FullText         string    `json:"raw_text"`
+	IsResolved       bool      `json:"is_resolved"`
+	Channel          string    `json:"channel,omitempty"`
+	Timestamp        time.Time `json:"timestamp,omitempty"`
+	Epoch            int64     `json:"epoch"`
+	ExtraParameters  *string   `json:"extra_parameters,omitempty"`
+	FormattedAddress string    `json:"formatted_address,omitempty"`
+	Reason           *string   `json:"reason,omitempty"`
+}
+
 type ConsumeMessagePayload struct {
 	Location feeds.Location `json:"location"`
-	Feed     feeds.Feed     `json:"feed"`
+	Feed     FeedMessage    `json:"feed"`
 }
 
 type IntentMessagePayload struct {

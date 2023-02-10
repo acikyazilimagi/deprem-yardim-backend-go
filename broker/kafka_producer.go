@@ -1,0 +1,18 @@
+package broker
+
+import (
+	"os"
+	"strings"
+
+	"github.com/Shopify/sarama"
+)
+
+func NewProducer() (sarama.SyncProducer, error) {
+	brokers := strings.Split(os.Getenv("KAFKA_BROKERS"), ",")
+
+	// We need to change below configs when kafka cluster was created
+	// We don't know how we can connect to kafka
+	config := sarama.NewConfig()
+
+	return sarama.NewSyncProducer(brokers, config)
+}

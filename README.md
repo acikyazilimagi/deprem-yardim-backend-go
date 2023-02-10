@@ -28,6 +28,21 @@ Grafana: `docker run --name grafana -i -p 3000:3000 grafana/grafana`
 
 Prometheus: `docker run -it -d --name prometheus -p 9090:9090 -v $PWD:/etc/prometheus prom/prometheus --config.file=/etc/prometheus/prometheus.yml`
 
+## API vs Consumer Mode
+Dockerfile contains 2 executables: `api` and `consumer`. One of the option can be selected via `--entrypoint` parameter.
+
+After building docker image, in order to run api that contains fiber endpoints;
+
+```shell
+docker run --entrypoint "/api" <image_name>
+```
+
+In same way, if you want to run application in consumer mode, use following
+
+```shell
+docker run --entrypoint "/consumer" <image_name>
+```
+
 ### /monitor
 
 ![monitor](/docs/fiber-monitor.png)

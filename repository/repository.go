@@ -83,8 +83,8 @@ func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timesta
 			&result.Reason,
 			&result.Channel)
 		if err != nil {
-			//continue
-			return nil, fmt.Errorf("could not scan locations: %w", err)
+			continue
+			// return nil, fmt.Errorf("could not scan locations: %w", err)
 		}
 
 		results = append(results, result)

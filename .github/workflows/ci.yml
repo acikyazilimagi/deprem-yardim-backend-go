@@ -16,6 +16,9 @@ jobs:
         with:
           go-version-file: 'go.mod'  # The Go version to download (if necessary) and use.
 
-      - name: Build
-        run: go build
+      - name: Build consumer
+        run: go build cmd/consumer/main.go
+
+      - name: Build api
+        run: go build cmd/api/main.go
 

@@ -1,0 +1,10 @@
+global:
+  scrape_interval: 5s
+  external_labels:
+    monitor: 'golangsvc'
+
+scrape_configs:
+  - job_name: 'golangsvc'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['backend-go-alb-1135796736.eu-central-1.elb.amazonaws.com']

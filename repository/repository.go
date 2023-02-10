@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/jackc/pgx/v5"
 	"os"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 
 	"github.com/acikkaynak/backend-api-go/needs"
 
@@ -246,4 +247,15 @@ func (repo *Repository) createFeedLocation(ctx context.Context, tx pgx.Tx, locat
 	}
 
 	return id, nil
+}
+
+func (repo *Repository) UpdateLocationIntent(ctx context.Context, id int64, intents string) error {
+	q := "UPDATE feeds_location SET reason = $1 WHERE id=$2;"
+
+	_, err := repo.pool.Exec(ctx, q, intents, id)
+	if err != nil {
+		return fmt.Errorf("could not update feeds location intent: %w", err)
+	}
+
+	return nil
 }

@@ -20,6 +20,17 @@ func IsValidReason(key string) bool {
 	return false
 }
 
+func IsValidChannel(key string) bool {
+	channels := []string{"", "twitter", "babala"}
+
+	for _, channel := range channels {
+		if channel == key {
+			return true
+		}
+	}
+	return false
+}
+
 // getFeedAreas godoc
 // @Summary            Get Feed areas with query strings
 // @Tags               Feed
@@ -40,6 +51,7 @@ func GetFeedAreas(repo *repository.Repository) fiber.Handler {
 		neLngStr := ctx.Query("ne_lng")
 		timeStampStr := ctx.Query("time_stamp")
 		reason := ctx.Query("reason", "")
+		channel := ctx.Query("channel", "")
 
 		var timestamp int64
 		if timeStampStr == "" {
@@ -61,7 +73,11 @@ func GetFeedAreas(repo *repository.Repository) fiber.Handler {
 			return ctx.JSON(fmt.Errorf("invalid reason: %s", reason))
 		}
 
-		data, err := repo.GetLocations(swLat, swLng, neLat, neLng, timestamp, reason)
+		if !IsValidChannel(channel) {
+			return ctx.JSON(fmt.Errorf("invalid channel: %s", channel))
+		}
+
+		data, err := repo.GetLocations(swLat, swLng, neLat, neLng, timestamp, reason, channel)
 		if err != nil {
 			return ctx.JSON(err)
 		}

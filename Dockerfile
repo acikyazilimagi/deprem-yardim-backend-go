@@ -10,14 +10,10 @@ COPY . .
 
 RUN CGO_ENABLED=0 go build -o api cmd/api/main.go
 
-FROM alpine:latest as runner
-
-RUN apk add --no-cache bash tini
+FROM gcr.io/distroless/static-debian11 as runner
 
 COPY --from=builder --chown=nonroot:nonroot /app/api /
 
 EXPOSE 80
 
-ENTRYPOINT ["/sbin/tini", "--"]
-
-CMD ["/api"]
+ENTRYPOINT ["/api"]

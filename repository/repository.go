@@ -88,7 +88,7 @@ func (repo *Repository) GetFeed(id int64) (*feeds.Feed, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	row := repo.pool.QueryRow(ctx, fmt.Sprintf(
-		"SELECT fe.id, full_text, is_resolved, channel, fe.timestamp, fe.extra_parameters, fl.formatted_address, fl.reason "+
+		"SELECT fe.id, full_text, is_resolved, fe.channel, fe.timestamp, fe.extra_parameters, fl.formatted_address, fl.reason "+
 			"FROM feeds_entry fe, feeds_location fl "+
 			"WHERE fe.id = fl.entry_id AND fe.id=%d", id))
 

@@ -1,6 +1,7 @@
 package broker
 
 import (
+	"log"
 	"os"
 	"strings"
 
@@ -8,7 +9,11 @@ import (
 )
 
 func NewProducer() (sarama.SyncProducer, error) {
-	brokers := strings.Split(os.Getenv("KAFKA_BROKERS"), ",")
+	kafkaBrokers := os.Getenv("KAFKA_BROKERS")
+	if kafkaBrokers == "" {
+		log.Panic("KAFKA_BROKERS env variable must be set")
+	}
+	brokers := strings.Split(kafkaBrokers, ",")
 
 	// We need to change below configs when kafka cluster was created
 	// We don't know how we can connect to kafka

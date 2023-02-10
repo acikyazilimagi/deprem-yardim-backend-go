@@ -2,12 +2,11 @@ package main
 
 import (
 	"fmt"
-	"strconv"
-	"time"
 	"github.com/Shopify/sarama"
 	"github.com/acikkaynak/backend-api-go/broker"
 	"github.com/acikkaynak/backend-api-go/cache"
 	"github.com/acikkaynak/backend-api-go/handler"
+	"github.com/acikkaynak/backend-api-go/middleware/auth"
 	"github.com/acikkaynak/backend-api-go/repository"
 	_ "github.com/acikkaynak/backend-api-go/swagger"
 	swagger "github.com/arsmn/fiber-swagger/v2"
@@ -15,7 +14,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/monitor"
-  "github.com/acikkaynak/backend-api-go/middleware/auth"
 	recover2 "github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -60,7 +58,7 @@ func main() {
 
 	kafkaProducer, err := broker.NewProducer()
 	if err != nil {
-		log.Fatalf("failed to init kafka produder. err: %s", err)
+		log.Println("failed to init kafka produder. err:", err)
 	}
 
 	app := fiber.New()

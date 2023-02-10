@@ -12,6 +12,7 @@ type Feed struct {
 	Timestamp        time.Time `json:"timestamp,omitempty"`
 	ExtraParameters  *string   `json:"extra_parameters,omitempty"`
 	FormattedAddress string    `json:"formatted_address,omitempty"`
+	Reason           *string   `json:"reason,omitempty"`
 }
 
 type LatLng struct {
@@ -25,6 +26,7 @@ type Result struct {
 	Entry_ID  int64     `json:"entry_id"`
 	Timestamp *string   `json:"timestamp,omitempty"`
 	Epoch     int64     `json:"epoch,omitempty"`
+	Reason    *string   `json:"reason,omitempty"`
 }
 
 type LiteResult struct {

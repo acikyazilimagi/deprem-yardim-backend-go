@@ -10,7 +10,7 @@ import (
 // @Summary            Get Feeds with given id
 // @Tags               Feed
 // @Produce            json
-// @Success            200 {object} map[string]interface{}
+// @Success            200 {object} feeds.Feed
 // @Param              id path integer true "Feed Id"
 // @Router             /feeds/{id} [GET]
 func GetFeedById(repo *repository.Repository) fiber.Handler {

@@ -8,7 +8,7 @@ import "github.com/gofiber/fiber/v2"
 // @Tags               Healthcheck
 // @Accept             */*
 // @Produce            json
-// @Success            200 {string} map[string]interface{}
+// @Success            200 {string} nil
 // @Router             /healthcheck [GET]
 func Healtcheck(ctx *fiber.Ctx) error {
 	return ctx.SendStatus(fiber.StatusOK)

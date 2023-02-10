@@ -12,7 +12,7 @@ import (
 // @Summary            Get Feed areas with query strings
 // @Tags               Feed
 // @Produce            json
-// @Success            200 {object} map[string]interface{}
+// @Success            200 {object} []feeds.Result
 // @Param              sw_lat query number true "Sw Lat"
 // @Param              sw_lng query number true "Sw Lng"
 // @Param              ne_lat query number true "Ne Lat"

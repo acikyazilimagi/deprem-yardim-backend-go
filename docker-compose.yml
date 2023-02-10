@@ -1,7 +1,6 @@
 version: '3.9'
 
 services:
-
   consumer:
     build:
       dockerfile: ./Dockerfile.consumer
@@ -23,7 +22,7 @@ services:
       - kafka
       - postgres
       - redis
- 
+
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
     environment:

@@ -1,23 +1,26 @@
-
 version: '3'
 
 services:
+  api:
+    image: deprem-api
+    build:
+      dockerfile: Dockerfile
+    environment:
+      KAFKA_BROKERS: kafka:9092
+    ports:
+      - 8000:80
+    depends_on:
+      - kafka
 
   consumer:
-    image: deprem
-    entrypoint: /consumer
+    image: deprem-consumer
+    build:
+      dockerfile: Dockerfile.consumer
     environment:
       KAFKA_BROKERS: kafka:9092
     depends_on:
       - kafka
-  api:
-    image: deprem
-    entrypoint: /api
-    environment:
-      KAFKA_BROKERS: kafka:9092
-    depends_on:
-      - kafka
-  
+
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
     environment:

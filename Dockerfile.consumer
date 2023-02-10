@@ -8,16 +8,14 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 go build -o api cmd/api/main.go
+RUN CGO_ENABLED=0 go build -o consumer cmd/consumer/main.go
 
 FROM alpine:latest as runner
 
 RUN apk add --no-cache bash tini
 
-COPY --from=builder --chown=nonroot:nonroot /app/api /
-
-EXPOSE 80
+COPY --from=builder --chown=nonroot:nonroot /app/consumer /
 
 ENTRYPOINT ["/sbin/tini", "--"]
 
-CMD ["/api"]
+CMD ["/consumer"]

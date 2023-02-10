@@ -1,4 +1,4 @@
-name: CI
+name: Test
 
 on:
   pull_request:
@@ -21,4 +21,3 @@ jobs:
 
       - name: Build api
         run: go build cmd/api/main.go
-

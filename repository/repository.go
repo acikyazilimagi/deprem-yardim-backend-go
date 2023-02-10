@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/acikkaynak/backend-api-go/needs"
 	"os"
 	"time"
+
+	"github.com/acikkaynak/backend-api-go/needs"
 
 	"github.com/acikkaynak/backend-api-go/feeds"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -95,13 +96,16 @@ func (repo *Repository) GetFeed(id int64) (*feeds.Feed, error) {
 	if err := row.Scan(&feed.ID, &feed.FullText, &feed.IsResolved, &feed.Channel, &feed.Timestamp, &feed.ExtraParameters, &feed.FormattedAddress, &feed.Reason); err != nil {
 		return nil, fmt.Errorf("could not query feed with id : %w", err)
 	}
-	var jsonMap map[string]interface{}
-	json.Unmarshal([]byte(*feed.ExtraParameters), &jsonMap)
-	delete(jsonMap, "tel")
-	delete(jsonMap, "name_surname")
-	marshal, _ := json.Marshal(jsonMap)
-	s := string(marshal)
-	feed.ExtraParameters = &s
+
+	if feed.ExtraParameters != nil {
+		var jsonMap map[string]interface{}
+		json.Unmarshal([]byte(*feed.ExtraParameters), &jsonMap)
+		delete(jsonMap, "tel")
+		delete(jsonMap, "name_surname")
+		marshal, _ := json.Marshal(jsonMap)
+		s := string(marshal)
+		feed.ExtraParameters = &s
+	}
 
 	return &feed, nil
 }

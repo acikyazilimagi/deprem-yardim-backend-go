@@ -1,8 +1,8 @@
-name: Deploy to Amazon ECS
+name: Deploy API
 
 on:
   push:
-    branches: [ "prod" ]
+    branches: ["prod"]
 
 jobs:
   deploy:
@@ -29,7 +29,7 @@ jobs:
       id: build-image
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: base-ecr
+        ECR_REPOSITORY: go-api-ecr
         IMAGE_TAG: ${{ github.sha }}
       run: |
         # Build a docker container and
@@ -53,4 +53,4 @@ jobs:
         task-definition: ${{ steps.task-def.outputs.task-definition }}
         service: api-go-service
         cluster: base-cluster
-        wait-for-service-stability: true
+        wait-for-service-stability: false

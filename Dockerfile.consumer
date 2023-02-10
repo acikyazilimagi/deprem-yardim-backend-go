@@ -8,12 +8,10 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 go build -o api cmd/api/main.go
+RUN CGO_ENABLED=0 go build -o consumer cmd/consumer/main.go
 
 FROM gcr.io/distroless/static-debian11 as runner
 
-COPY --from=builder --chown=nonroot:nonroot /app/api /
+COPY --from=builder --chown=nonroot:nonroot /app/consumer /
 
-EXPOSE 80
-
-ENTRYPOINT ["/api"]
+ENTRYPOINT ["/consumer"]

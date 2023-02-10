@@ -28,6 +28,7 @@ type Result struct {
 	Timestamp *string   `json:"timestamp,omitempty"`
 	Epoch     int64     `json:"epoch,omitempty"`
 	Reason    *string   `json:"reason,omitempty"`
+	Channel   *string   `json:"channel,omitempty"`
 }
 
 type LiteResult struct {

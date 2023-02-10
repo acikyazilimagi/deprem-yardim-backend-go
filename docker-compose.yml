@@ -1,6 +1,7 @@
 version: '3'
 
 services:
+
 #  consumer:
 #    build: .
 #    entrypoint: /consumer
@@ -16,7 +17,7 @@ services:
 #      KAFKA_BROKERS: kafka:9092
 #    depends_on:
 #      - kafka
-  
+ 
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
     environment:

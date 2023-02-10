@@ -101,7 +101,7 @@ func (repo *Repository) GetNeeds(onlyNotResolved bool) ([]needs.Need, error) {
 	defer cancel()
 
 	q := "SELECT n.id, n.description, n.is_resolved, n.timestamp, n.extra_parameters, n.formatted_address, n.latitude, n.longitude " +
-		"FROM needs n "
+		"FROM needs n"
 	if onlyNotResolved {
 		q = fmt.Sprintf("%s WHERE n.is_resolved=false", q)
 	}

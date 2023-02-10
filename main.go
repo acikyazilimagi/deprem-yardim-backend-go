@@ -58,7 +58,7 @@ func main() {
 
 	kafkaProducer, err := broker.NewProducer()
 	if err != nil {
-		log.Fatalf("failed to init kafka produder. err: %s", err)
+		log.Println("failed to init kafka produder. err:", err)
 	}
 
 	app := fiber.New()

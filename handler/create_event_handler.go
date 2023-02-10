@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -10,11 +11,11 @@ import (
 )
 
 type request struct {
-	ID        string         `json:"id"`
-	Payload   string         `json:"payload"`
-	Channel   string         `json:"channel"`
-	Metadata  map[string]any `json:"metadata"`
-	Timestamp int64          `json:"timestamp"`
+	ID              string `json:"id"`
+	RawText         string `json:"raw_text"`
+	Channel         string `json:"channel"`
+	ExtraParameters string `json:"extra_parameters"`
+	Epoch           int64  `json:"timestamp"`
 }
 
 // createEvent godoc
@@ -37,10 +38,12 @@ func CreateEventHandler(producer sarama.SyncProducer) fiber.Handler {
 			req.ID = uuid.New().String()
 		}
 
+		bytes, _ := json.Marshal(req)
+
 		_, _, err := producer.SendMessage(&sarama.ProducerMessage{
-			Topic: req.Channel,
+			Topic: fmt.Sprintf("topic.raw.%s", req.Channel),
 			Key:   sarama.StringEncoder(req.ID),
-			Value: sarama.StringEncoder(req.Payload),
+			Value: sarama.ByteEncoder(bytes),
 		})
 
 		if err != nil {

@@ -10,6 +10,7 @@ type Feed struct {
 	IsResolved       bool      `json:"is_resolved"`
 	Channel          string    `json:"channel,omitempty"`
 	Timestamp        time.Time `json:"timestamp,omitempty"`
+	Epoch            int64     `json:"epoch"`
 	ExtraParameters  *string   `json:"extra_parameters,omitempty"`
 	FormattedAddress string    `json:"formatted_address,omitempty"`
 	Reason           *string   `json:"reason,omitempty"`
@@ -38,4 +39,20 @@ type LiteResult struct {
 type Response struct {
 	Count   int      `json:"count"`
 	Results []Result `json:"results"`
+}
+
+type Location struct {
+	ID               int64     `json:"id"`
+	FormattedAddress string    `json:"formatted_address"`
+	Latitude         float64   `json:"latitude"`
+	Longitude        float64   `json:"longitude"`
+	NortheastLat     float64   `json:"northeast_lat"`
+	NortheastLng     float64   `json:"northeast_lng"`
+	SouthwestLat     float64   `json:"southwest_lat"`
+	SouthwestLng     float64   `json:"southwest_lng"`
+	EntryID          int64     `json:"entry_id"`
+	Timestamp        time.Time `json:"timestamp"`
+	Epoch            int64     `json:"epoch"`
+	Reason           string    `json:"reason"`
+	Channel          string    `json:"channel"`
 }

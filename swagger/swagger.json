@@ -216,6 +216,9 @@
                 "channel": {
                     "type": "string"
                 },
+                "epoch": {
+                    "type": "integer"
+                },
                 "extra_parameters": {
                     "type": "string"
                 },
@@ -230,6 +233,9 @@
                 },
                 "is_resolved": {
                     "type": "boolean"
+                },
+                "reason": {
+                    "type": "string"
                 },
                 "timestamp": {
                     "type": "string"
@@ -254,6 +260,9 @@
                         "type": "number"
                     }
                 },
+                "reason": {
+                    "type": "string"
+                },
                 "timestamp": {
                     "type": "string"
                 }
@@ -265,14 +274,13 @@
                 "channel": {
                     "type": "string"
                 },
+                "extra_parameters": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "string"
                 },
-                "metadata": {
-                    "type": "object",
-                    "additionalProperties": {}
-                },
-                "payload": {
+                "raw_text": {
                     "type": "string"
                 },
                 "timestamp": {

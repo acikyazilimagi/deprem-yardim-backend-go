@@ -2,7 +2,7 @@ name: Deploy Consumer
 
 on:
   push:
-    branches: ["prod2"]
+    branches: ["prod"]
 
 jobs:
   deploy:

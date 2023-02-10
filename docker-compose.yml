@@ -1,25 +1,27 @@
-version: '3'
+version: '3.9'
 
 services:
-  api:
-    image: deprem-api
-    build:
-      dockerfile: Dockerfile
-    environment:
-      KAFKA_BROKERS: kafka:9092
-    ports:
-      - 8000:80
-    depends_on:
-      - kafka
-
   consumer:
-    image: deprem-consumer
     build:
-      dockerfile: Dockerfile.consumer
+      dockerfile: ./Dockerfile.consumer
+      context: .
     environment:
       KAFKA_BROKERS: kafka:9092
+      DB_CONN_STR: postgres://postgres:s3cr3t@postgresql:5432/postgres
     depends_on:
       - kafka
+      - postgres
+
+  api:
+    build: .
+    environment:
+      KAFKA_BROKERS: kafka:9092
+      DB_CONN_STR: postgres://postgres:s3cr3t@postgresql:5432/postgres
+      RedisAddr: redis:6379
+    depends_on:
+      - kafka
+      - postgres
+      - redis
 
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
@@ -48,6 +50,7 @@ services:
     image: provectuslabs/kafka-ui:latest
     depends_on:
       - kafka
+      - zookeeper
     ports:
       - 8085:8085
       - 8080:8080
@@ -55,3 +58,20 @@ services:
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+
+  postgres:
+    image: postgres:15.1
+    environment:
+      POSTGRES_PASSWORD: s3cr3t
+    healthcheck:
+      test: [ "CMD", "pg_isready" ,"-U", "postgres", "-h", "127.0.0.1", "-p", "5432" ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - ./resources/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - 5435:5432
+
+  redis:
+    image: redis:latest

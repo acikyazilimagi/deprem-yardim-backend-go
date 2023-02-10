@@ -1,49 +1,49 @@
 
-# Açıklama
+# Description
 
 
 
-**discord kullanıcı adı: @afetharita#0001**
+**discord username: @afetharita#0001**
 
 
 **closes #issue**
 
 
 
-Lütfen değişikliklerinizi açıklayın. Aynı zamanda amacınızı ve içeriği açıklayın. Bu değişikliklerin gerektirdiği bağımlılıkları da listelemeyi unutmayın.
+Please describe your changes, the reason for the changes, and the content of the code. Don't forget to list the dependencies that are effected by the change.
 
 
-## PR açmadan önce dikkat edilmesi gerekenler
-- [ ] Kendi kodumu inceledim, review ettim.
-- [ ] Eğer core bir feature ise, detaylı testler yaptım.
+## Things to do before you open the PR
+- [ ] I inspected and reviewed my own code.
+- [ ] If it's a core feature, I've ran detailed tests.
 
-## PR açma kuralları
-- [ ] Approved tagine sahip bir issue için PR açılmalıdır. Aksi takdirde PR reddedilecektir.
-- [ ] İlgili issue numarası: PR ile ilgili issue numarası, PR başlığının başına, prefix sonrası parantez içinde # ile eklenmelidir. "prefix(#issue_number): PR başlığı" şeklinde bir başlık kullanılabilir.
-- [ ] Açıklayıcı ve anlaşılır bir başlık: PR başlığı, değişikliklerin niteliklerini ve amaçlarını açık bir şekilde tanımlamalıdır. Pr başlığı, PR açıldığında görüntülenen ilk şey olmalıdır. Ve semantik commit kurallarını takip etmelidir. Örneğin "docs(#issueId): Add README.md" şeklinde bir başlık kullanılabilir. 
-- [ ] İlgili dosya seçimi: Sadece ilgili dosyalara dokunulmalı ve başka dosyaların etkilenmemesi sağlanmalıdır.
-- [ ] Format ve Lint uygunluğu: Kod, belirli bir format standardına uygun hale getirilmeli ve lint kurallarına göre incelenmelidir.
-- [ ] Temiz commit geçmişi: Değişikliklerin yapıldığı commitler, anlaşılır ve düzenli olmalıdır.
-- [ ] İş tamamlandığında PR açılması: PR, iş tamamlandığında açılmalı ve diğer takım üyeleri tarafından incelenmesi için gönderilmelidir.
-
-
-
-## Değişiklikler
-
-- [ ] Yeni bir özellik (breaking change olmayan, yeni bir özellik ekleyen bir değişiklik)
-- [ ] Yeni bir refactor (breaking change olmayan, kodun okunabilirliğini veya performansını artıran bir değişiklik)
-- [ ] Breaking bir değişiklik 
-- [ ] Dokümantasyon değişikliği
+## Rules for opening PR's 
+- [ ] You must open a PR for an already existing issue. Otherwise the PR will be rejected.
+- [ ] Relevant issue number: Add the issue number in the '#issue' field below the discord username.
+- [ ] Clear and concise title: The PR title must be representative of the purposes and qualities of the actual code changes. It must be at the top of the comment. It must follow the semantic commit rules. For example: "docs(#issueId): Add README.md". 
+- [ ] Relevant document choice: Only the relevant files must be changed and other files should remain untouched.
+- [ ] Formatting and Linting: Code must have been passed through the linters used by this repository.
+- [ ] Clean commit history: Commits with the changes need to be well ordered and descriptive.
+- [ ] Completed: PR should only be opened after the work is done, and must be sent to the other team members for review.
 
 
-# Bu değişiklikler nasıl test edildi?
 
-Lütfen yaptığınız değişiklikleri test etmek için yaptığınız testleri açıklayın. Lütfen aynı zamanda test konfigürasyonunuzu da belirtin.
+## Changes
+
+- [ ] New Feature (Non-breaking)
+- [ ] New Refactor (Non-breaking performance or readability based changes)
+- [ ] Breaking change
+- [ ] Updated Docs
 
 
-**Test Konfigürasyonu**:
+# How were these changes tested?
 
-* Firmware versiyonu:
-* Donanım:
+Please explain the actions you've taken to test these changes. Please also explain your testing environment.
+
+
+**Test Configuration**:
+
+* Firmware version:
+* Hardware:
 * Toolchain:
 * SDK:

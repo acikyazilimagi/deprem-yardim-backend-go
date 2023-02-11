@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/gofiber/fiber/v2/middleware/pprof"
 	"log"
 	"net/http"
 	"os"
@@ -66,6 +67,7 @@ func main() {
 	app.Use(cors.New())
 	app.Use(recover2.New())
 	app.Use(auth.New())
+	app.Use(pprof.New())
 	app.Use(func(c *fiber.Ctx) error {
 		if c.Path() == "/healthcheck" ||
 			c.Path() == "/metrics" ||

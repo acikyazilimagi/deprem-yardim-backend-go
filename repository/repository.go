@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/jackc/pgx/v5"
 	"os"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 
 	"github.com/acikkaynak/backend-api-go/needs"
 
@@ -180,10 +181,12 @@ func (repo *Repository) CreateFeed(ctx context.Context, feed feeds.Feed, locatio
 	}
 	defer tx.Rollback(ctx)
 
-	if _, err = repo.createFeedEntry(ctx, tx, feed); err != nil {
+	entryID, err := repo.createFeedEntry(ctx, tx, feed)
+	if err != nil {
 		return err
 	}
 
+	location.EntryID = entryID
 	if _, err = repo.createFeedLocation(ctx, tx, location); err != nil {
 		return err
 	}
@@ -233,17 +236,31 @@ func (repo *Repository) createFeedLocation(ctx context.Context, tx pgx.Tx, locat
 		) RETURNING id;`
 
 	var id int64
-	err := tx.QueryRow(ctx, q,
-		location.FormattedAddress,
-		location.Latitude, location.Longitude,
-		location.NortheastLat, location.NortheastLng,
-		location.SouthwestLat, location.SouthwestLng,
-		location.EntryID, location.Timestamp,
-		location.Epoch, location.Reason, location.Channel,
-	).Scan(&id)
-	if err != nil {
-		return 0, fmt.Errorf("could not insert feeds location: %w", err)
+
+	if location.FormattedAddress != "" && location.Latitude != 0 && location.Longitude != 0 {
+		err := tx.QueryRow(ctx, q,
+			location.FormattedAddress,
+			location.Latitude, location.Longitude,
+			location.NortheastLat, location.NortheastLng,
+			location.SouthwestLat, location.SouthwestLng,
+			location.EntryID, location.Timestamp,
+			location.Epoch, location.Reason, location.Channel,
+		).Scan(&id)
+		if err != nil {
+			return 0, fmt.Errorf("could not insert feeds location: %w", err)
+		}
 	}
 
 	return id, nil
+}
+
+func (repo *Repository) UpdateLocationIntent(ctx context.Context, id int64, intents string) error {
+	q := "UPDATE feeds_location SET reason = $1 WHERE entry_id=$2;"
+
+	_, err := repo.pool.Exec(ctx, q, intents, id)
+	if err != nil {
+		return fmt.Errorf("could not update feeds location intent: %w", err)
+	}
+
+	return nil
 }

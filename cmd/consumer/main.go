@@ -17,20 +17,49 @@ import (
 	"github.com/acikkaynak/backend-api-go/broker"
 	"github.com/acikkaynak/backend-api-go/feeds"
 	"github.com/acikkaynak/backend-api-go/repository"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const (
-	consumerGroupName        = "feeds_location_consumer"
-	intentConsumerGroupName  = "feeds_intent_consumer"
-	addressResolvedTopicName = "topic.feeds.location"
-	intentResolvedTopicName  = "topic.feeds.intent"
+	consumerGroupName             = "feeds_location_consumer"
+	intentConsumerGroupName       = "feeds_intent_consumer"
+	addressResolvedTopicName      = "topic.feeds.location"
+	intentResolvedTopicName       = "topic.feeds.intent"
+	AWS_TASK_METADATA_URL_ENV_VAR = "ECS_CONTAINER_METADATA_URI_V4"
+)
+
+var (
+	clientCounter = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "go_consumer_metrics",
+	}, []string{"topic", "timestamp", "task_id"})
+
+	taskID string
 )
 
 // Message will be handled in ConsumeClaim method.
 func main() {
+	resp, err := http.Get(os.Getenv(AWS_TASK_METADATA_URL_ENV_VAR) + "/taskWithTags")
+	if err != nil {
+		fmt.Println("could not get task metadata info")
+	}
+
+	var respData map[string]string
+	if err := json.NewDecoder(resp.Body).Decode(&respData); err != nil {
+		fmt.Println("could not decode task metadata info")
+	} else {
+		splitted := strings.Split(respData["TaskARN"], "/")
+		if len(splitted) > 1 {
+			taskID = splitted[len(splitted)-1]
+		}
+	}
+
 	http.HandleFunc("/healthcheck", func(writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(200)
 	})
+
+	http.Handle("/metrics", promhttp.Handler())
 
 	go func() {
 		if err := http.ListenAndServe(":80", nil); err != nil {
@@ -242,6 +271,11 @@ func (consumer *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, clai
 		select {
 		case message := <-claim.Messages():
 			log.Printf("Message claimed: value = %s, timestamp = %v, topic = %s", string(message.Value), message.Timestamp, message.Topic)
+			clientCounter.With(prometheus.Labels{
+				"topic":     message.Topic,
+				"timestamp": fmt.Sprintf("%d", message.Timestamp.Unix()),
+				"task_id":   taskID,
+			}).Inc()
 			if message.Topic == intentResolvedTopicName {
 				consumer.intentResolveHandle(message, session)
 			}

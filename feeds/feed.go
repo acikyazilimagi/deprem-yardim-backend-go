@@ -58,19 +58,10 @@ type Location struct {
 	Channel          string    `json:"channel"`
 }
 
-// UpdateFeedLocationsRequest info
-//
-// @Description FeedLocations list of update locations requests
 type UpdateFeedLocationsRequest struct {
 	FeedLocations []FeedLocation `json:"feed_locations"`
 }
 
-// FeedLocation feed location body
-//
-// @Description EntryID feed entry id
-// @Description Latitude location latitude
-// @Description Longitude location longitude
-// @Description Address location address
 type FeedLocation struct {
 	EntryID   int64   `json:"entry_id"`
 	Latitude  float64 `json:"latitude"`

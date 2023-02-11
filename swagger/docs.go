@@ -285,7 +285,6 @@ const docTemplate = `{
             }
         },
         "feeds.FeedLocation": {
-            "description": "EntryID feed entry id Latitude location latitude Longitude location longitude Address location address",
             "type": "object",
             "properties": {
                 "address": {
@@ -335,7 +334,6 @@ const docTemplate = `{
             }
         },
         "feeds.UpdateFeedLocationsRequest": {
-            "description": "FeedLocations list of update locations requests",
             "type": "object",
             "properties": {
                 "feed_locations": {

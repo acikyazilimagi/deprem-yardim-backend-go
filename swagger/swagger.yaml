@@ -22,8 +22,6 @@ definitions:
         type: string
     type: object
   feeds.FeedLocation:
-    description: EntryID feed entry id Latitude location latitude Longitude location
-      longitude Address location address
     properties:
       address:
         type: string
@@ -56,7 +54,6 @@ definitions:
         type: string
     type: object
   feeds.UpdateFeedLocationsRequest:
-    description: FeedLocations list of update locations requests
     properties:
       feed_locations:
         items:

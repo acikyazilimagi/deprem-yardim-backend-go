@@ -39,6 +39,7 @@ func (a *Application) Register() {
 	a.app.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
 	a.app.Get("/monitor", monitor.New())
 	a.app.Get("/feeds/areas", handler.GetFeedAreas(a.repo))
+	a.app.Patch("/feeds/areas", handler.UpdateFeedLocationsHandler(a.repo))
 	a.app.Get("/feeds/:id/", handler.GetFeedById(a.repo))
 	// We need to set up authentication for POST /events endpoint.
 	a.app.Post("/events", handler.CreateEventHandler(a.kafkaProducer))

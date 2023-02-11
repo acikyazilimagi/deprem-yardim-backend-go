@@ -1,12 +1,12 @@
 package handler
 
 import (
-	"fmt"
+	"strconv"
+	"time"
+
 	"github.com/acikkaynak/backend-api-go/feeds"
 	"github.com/acikkaynak/backend-api-go/repository"
 	"github.com/gofiber/fiber/v2"
-	"strconv"
-	"time"
 )
 
 func IsValidReason(key string) bool {
@@ -70,13 +70,6 @@ func GetFeedAreas(repo *repository.Repository) fiber.Handler {
 		swLng, _ := strconv.ParseFloat(swLngStr, 64)
 		neLat, _ := strconv.ParseFloat(neLatStr, 64)
 		neLng, _ := strconv.ParseFloat(neLngStr, 64)
-		if !IsValidReason(reason) {
-			return ctx.JSON(fmt.Errorf("invalid reason: %s", reason))
-		}
-
-		if !IsValidChannel(channel) {
-			return ctx.JSON(fmt.Errorf("invalid channel: %s", channel))
-		}
 
 		data, err := repo.GetLocations(swLat, swLng, neLat, neLng, timestamp, reason, channel)
 		if err != nil {

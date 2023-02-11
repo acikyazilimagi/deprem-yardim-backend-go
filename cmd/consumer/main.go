@@ -104,6 +104,7 @@ func sendIntentResolveRequest(fullText string, feedID int64) (string, error) {
 	jsonBytes, err := json.Marshal(IntentRequest{
 		Inputs: fullText,
 	})
+	fmt.Println(os.Getenv("INTENT_RESOLVER_API_URL"))
 
 	req, err := http.NewRequest("POST", os.Getenv("INTENT_RESOLVER_API_URL"), bytes.NewReader(jsonBytes))
 	if err != nil {

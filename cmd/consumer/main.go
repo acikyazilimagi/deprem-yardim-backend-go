@@ -40,6 +40,7 @@ var (
 
 // Message will be handled in ConsumeClaim method.
 func main() {
+
 	resp, err := http.Get(os.Getenv(AWS_TASK_METADATA_URL_ENV_VAR) + "/taskWithTags")
 	if err != nil {
 		fmt.Println("could not get task metadata info")
@@ -150,7 +151,7 @@ func sendIntentResolveRequest(fullText string, feedID int64) (string, error) {
 		fmt.Fprintf(os.Stderr, "could not prepare http request IntentMessagePayload error message %s error %s", fullText, err.Error())
 		return "", err
 	}
-	//req.Header.Add("Authorization", "Bearer "+os.Getenv("INTENT_RESOLVER_API_KEY"))
+	req.Header.Add("Authorization", "Bearer "+os.Getenv("INTENT_RESOLVER_API_KEY"))
 	req.Header.Add("content-type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)

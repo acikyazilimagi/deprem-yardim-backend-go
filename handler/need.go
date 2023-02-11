@@ -15,7 +15,7 @@ func NewNeedsHandler(repo *repository.Repository) *NeedsHandler {
 	return &NeedsHandler{repo: repo}
 }
 
-// createNeed godoc
+// HandleCreate godoc
 // @Summary            Create Need
 // @Tags               Need
 // @Produce            json
@@ -25,12 +25,12 @@ func NewNeedsHandler(repo *repository.Repository) *NeedsHandler {
 func (h *NeedsHandler) HandleCreate(ctx *fiber.Ctx) error {
 	req := needs.CreateNeedRequest{}
 	if err := ctx.BodyParser(&req); err != nil {
-		return ctx.JSON(err)
+		return ctx.JSON(needs.ErrorResponse{Message: err.Error()})
 	}
 
 	id, err := h.repo.CreateNeed(req.Address, req.Description)
 	if err != nil {
-		return ctx.JSON(err)
+		return ctx.JSON(needs.ErrorResponse{Message: err.Error()})
 	}
 
 	resp := &needs.LiteNeed{
@@ -40,7 +40,7 @@ func (h *NeedsHandler) HandleCreate(ctx *fiber.Ctx) error {
 
 }
 
-// getNeeds godoc
+// HandleList godoc
 // @Summary            Get Needs
 // @Tags               Need
 // @Produce            json
@@ -52,7 +52,7 @@ func (h *NeedsHandler) HandleList(ctx *fiber.Ctx) error {
 	onlyNotResolved, _ := strconv.ParseBool(onlyNotResolvedStr)
 	data, err := h.repo.GetNeeds(onlyNotResolved)
 	if err != nil {
-		return ctx.JSON(err)
+		return ctx.JSON(needs.ErrorResponse{Message: err.Error()})
 	}
 
 	resp := &needs.Response{

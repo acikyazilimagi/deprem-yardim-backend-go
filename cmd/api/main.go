@@ -32,7 +32,7 @@ type Application struct {
 
 func (a *Application) Register() {
 	a.app.Get("/", handler.RedirectSwagger)
-	a.app.Get("/healthcheck", handler.Healtcheck)
+	a.app.Get("/healthcheck", handler.HealthCheck)
 	a.app.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
 	a.app.Get("/monitor", monitor.New())
 	a.app.Get("/feeds/areas", handler.GetFeedAreas(a.repo))
@@ -90,7 +90,6 @@ func main() {
 		}
 		return c.JSON(cacheData)
 	})
-
 	app.Get("/needs", needsHandler.HandleList)
 	app.Post("/needs", needsHandler.HandleCreate)
 

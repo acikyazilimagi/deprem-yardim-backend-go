@@ -27,3 +27,7 @@ type Response struct {
 	Count   int    `json:"count"`
 	Results []Need `json:"results"`
 }
+
+type ErrorResponse struct {
+	Message string `json:"message"`
+}

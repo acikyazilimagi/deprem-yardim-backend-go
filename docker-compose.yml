@@ -7,21 +7,21 @@ services:
       context: .
     environment:
       KAFKA_BROKERS: kafka:9092
-      DB_CONN_STR: postgres://postgres:s3cr3t@postgresql:5432/postgres
+      DB_CONN_STR: postgres://postgres:s3cr3t@postgres:5432/postgres
     depends_on:
-      - kafka
-      - postgres
+      - api
 
   api:
     build: .
     environment:
       KAFKA_BROKERS: kafka:9092
-      DB_CONN_STR: postgres://postgres:s3cr3t@postgresql:5432/postgres
+      DB_CONN_STR: postgres://postgres:s3cr3t@postgres:5432/postgres
       RedisAddr: redis:6379
     depends_on:
-      - kafka
-      - postgres
-      - redis
+      kafka:
+        condition: service_healthy
+    ports:
+      - "80:80"
 
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
@@ -29,15 +29,16 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     ports:
-      - 2181:2181
+      - "2181:2181"
 
   kafka:
     image: confluentinc/cp-kafka:latest
+    container_name: kafka
     depends_on:
       - zookeeper
     ports:
-      - 29092:29092
-      - 9092:9092
+      - "29092:29092"
+      - "9092:9092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -45,6 +46,12 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: nc -z localhost 9092 || exit -1
+      start_period: 15s
+      interval: 5s
+      timeout: 10s
+      retries: 10
 
   kafka_ui:
     image: provectuslabs/kafka-ui:latest
@@ -52,8 +59,8 @@ services:
       - kafka
       - zookeeper
     ports:
-      - 8085:8085
-      - 8080:8080
+      - "8085:8085"
+      - "8080:8080"
     environment:
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
       KAFKA_CLUSTERS_0_NAME: local
@@ -62,6 +69,7 @@ services:
   postgres:
     image: postgres:15.1
     environment:
+      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: s3cr3t
     healthcheck:
       test: [ "CMD", "pg_isready" ,"-U", "postgres", "-h", "127.0.0.1", "-p", "5432" ]
@@ -71,7 +79,9 @@ services:
     volumes:
       - ./resources/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
-      - 5435:5432
+      - "5432:5432"
 
   redis:
     image: redis:latest
+    ports:
+      - "6379:6379"

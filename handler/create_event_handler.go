@@ -18,7 +18,7 @@ type request struct {
 	Epoch           int64  `json:"epoch"`
 }
 
-// createEvent godoc
+// CreateEventHandler godoc
 // @Summary            Create Event areas with request body
 // @Tags               Event
 // @Accept             json

@@ -31,7 +31,7 @@ func IsValidChannel(key string) bool {
 	return false
 }
 
-// getFeedAreas godoc
+// GetFeedAreas godoc
 // @Summary            Get Feed areas with query strings
 // @Tags               Feed
 // @Produce            json
@@ -80,7 +80,7 @@ func GetFeedAreas(repo *repository.Repository) fiber.Handler {
 
 		data, err := repo.GetLocations(swLat, swLng, neLat, neLng, timestamp, reason, channel)
 		if err != nil {
-			return ctx.JSON(err)
+			return ctx.JSON(feeds.ErrorResponse{Message: err.Error()})
 		}
 
 		resp := &feeds.Response{

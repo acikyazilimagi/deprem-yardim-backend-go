@@ -1,12 +1,13 @@
 package handler
 
 import (
+	"github.com/acikkaynak/backend-api-go/feeds"
 	"github.com/acikkaynak/backend-api-go/repository"
 	"github.com/gofiber/fiber/v2"
 	"strconv"
 )
 
-// getFeedById godoc
+// GetFeedById godoc
 // @Summary            Get Feeds with given id
 // @Tags               Feed
 // @Produce            json
@@ -24,7 +25,7 @@ func GetFeedById(repo *repository.Repository) fiber.Handler {
 
 		feed, err := repo.GetFeed(feedID)
 		if err != nil {
-			return ctx.JSON(err)
+			return ctx.JSON(feeds.ErrorResponse{Message: err.Error()})
 		}
 
 		return ctx.JSON(feed)

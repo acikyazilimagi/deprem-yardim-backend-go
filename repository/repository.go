@@ -24,8 +24,7 @@ var (
 		"entry_id, " +
 		"epoch, " +
 		"reason, " +
-		"channel " +
-		"FROM feeds_location where "
+		"channel "
 )
 
 type Repository struct {
@@ -49,11 +48,17 @@ func (repo *Repository) Close() {
 	repo.pool.Close()
 }
 
-func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timestamp int64, reason, channel string) ([]feeds.Result, error) {
+func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timestamp int64, reason, channel string, extraParams bool) ([]feeds.Result, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
 	q := getLocationsQuery
+
+	if extraParams == true {
+		q = fmt.Sprintf("%s ,extra_parameters ", q)
+	}
+
+	q = fmt.Sprintf("%s FROM feeds_location_backup where ", q)
 
 	whereConditions := make([]string, 0)
 
@@ -93,16 +98,31 @@ func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timesta
 		var result feeds.Result
 		result.Loc = make([]float64, 2)
 
-		err := query.Scan(&result.ID,
-			&result.Loc[0],
-			&result.Loc[1],
-			&result.Entry_ID,
-			&result.Epoch,
-			&result.Reason,
-			&result.Channel)
-		if err != nil {
-			continue
-			// return nil, fmt.Errorf("could not scan locations: %w", err)
+		if extraParams {
+			err := query.Scan(&result.ID,
+				&result.Loc[0],
+				&result.Loc[1],
+				&result.Entry_ID,
+				&result.Epoch,
+				&result.Reason,
+				&result.Channel,
+				&result.ExtraParameters)
+			if err != nil {
+				continue
+				// return nil, fmt.Errorf("could not scan locations: %w", err)
+			}
+		} else {
+			err := query.Scan(&result.ID,
+				&result.Loc[0],
+				&result.Loc[1],
+				&result.Entry_ID,
+				&result.Epoch,
+				&result.Reason,
+				&result.Channel)
+			if err != nil {
+				continue
+				// return nil, fmt.Errorf("could not scan locations: %w", err)
+			}
 		}
 
 		results = append(results, result)

@@ -28,6 +28,16 @@ const (
 
 // Message will be handled in ConsumeClaim method.
 func main() {
+	http.HandleFunc("/healthcheck", func(writer http.ResponseWriter, request *http.Request) {
+		writer.WriteHeader(200)
+	})
+
+	go func() {
+		if err := http.ListenAndServe(":80", nil); err != nil {
+			fmt.Fprintf(os.Stderr, "server could not started or stopped: %s", err)
+		}
+	}()
+
 	client, err := broker.NewConsumerGroup(consumerGroupName)
 	if err != nil {
 		log.Panic(err.Error())

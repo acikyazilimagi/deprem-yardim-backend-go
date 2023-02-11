@@ -42,6 +42,10 @@ type Response struct {
 	Results []Result `json:"results"`
 }
 
+type ErrorResponse struct {
+	Message string `json:"message"`
+}
+
 type Location struct {
 	ID               int64     `json:"id"`
 	FormattedAddress string    `json:"formatted_address"`

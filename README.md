@@ -2,7 +2,7 @@
 
 # Proje Mimarisi
 
-![architecture](/docs/architecture.png)
+![architecture](./docs/architecture.png)
 
 # Endpointler
 
@@ -23,6 +23,15 @@ Request** : `/feeds/areas?ne_lat=37.62633260711298&ne_lng=36.97311401367188&sw_l
 Tekil bir işlenmemiş twitter verisini döner.
 
 ### Run Locally
+
+#### use docker compose:
+`docker compose up`
+
+and then hit `htt://localhost` or `http://localhost/swagger/index.html`  to verify if api works, you should see the swagger docs.
+
+To see running docker containers and their port mapping: run `docker ps`
+
+#### or run services exclusively
 
 Redis: `docker run -d --name redis-stack-server -p 6379:6379 redis/redis-stack-server:latest`
 
@@ -49,15 +58,15 @@ docker run --entrypoint "/consumer" <image_name>
 
 ### /monitor
 
-![monitor](/docs/fiber-monitor.png)
+![monitor](./docs/fiber-monitor.png)
 
 ### /metrics
 
-![metrics](/docs/metrics.png)
+![metrics](./docs/metrics.png)
 
 ### Swagger
 
-![swagger](/docs/swagger.png)
+![swagger](./docs/swagger.png)
 swagger klasörü altındaki dosyaları güncellemek için bash:
 
 ```

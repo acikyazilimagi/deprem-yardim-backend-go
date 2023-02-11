@@ -2,6 +2,13 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
 	"github.com/Shopify/sarama"
 	"github.com/acikkaynak/backend-api-go/broker"
 	"github.com/acikkaynak/backend-api-go/cache"
@@ -17,11 +24,6 @@ import (
 	recover2 "github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"log"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 type Application struct {
@@ -85,7 +87,7 @@ func main() {
 		cacheData := cacheRepo.Get(hashURL)
 		if cacheData == nil {
 			c.Next()
-			cacheRepo.SetKey(hashURL, c.Response().Body(), 0)
+			cacheRepo.SetKey(hashURL, c.Response().Body(), 5*time.Minute)
 			return nil
 		}
 		return c.JSON(cacheData)

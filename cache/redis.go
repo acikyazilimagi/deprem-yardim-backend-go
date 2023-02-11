@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/go-redis/redis"
@@ -24,9 +23,8 @@ func NewRedisRepository() *RedisRepository {
 	return &RedisRepository{client: client}
 }
 
-func (repository *RedisRepository) SetKey(key string, value interface{}, ttl int) {
-	duration, _ := time.ParseDuration(strconv.FormatInt(int64(ttl), 10))
-	status := repository.client.Set(key, value, duration)
+func (repository *RedisRepository) SetKey(key string, value interface{}, ttl time.Duration) {
+	status := repository.client.Set(key, value, ttl)
 	_, err := status.Result()
 	if err != nil {
 		fmt.Println(err)

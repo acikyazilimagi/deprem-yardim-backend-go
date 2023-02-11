@@ -128,17 +128,17 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "description": "RequestBody",
-                        "name": "body",
+                        "name": "UpdateFeedLocationsRequest",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.request"
+                            "$ref": "#/definitions/feeds.UpdateFeedLocationsRequest"
                         }
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK"
+                    "202": {
+                        "description": "Accepted"
                     }
                 }
             }
@@ -284,6 +284,24 @@ const docTemplate = `{
                 }
             }
         },
+        "feeds.FeedLocation": {
+            "description": "EntryID feed entry id Latitude location latitude Longitude location longitude Address location address",
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "entry_id": {
+                    "type": "integer"
+                },
+                "latitude": {
+                    "type": "number"
+                },
+                "longitude": {
+                    "type": "number"
+                }
+            }
+        },
         "feeds.Result": {
             "type": "object",
             "properties": {
@@ -313,6 +331,18 @@ const docTemplate = `{
                 },
                 "timestamp": {
                     "type": "string"
+                }
+            }
+        },
+        "feeds.UpdateFeedLocationsRequest": {
+            "description": "FeedLocations list of update locations requests",
+            "type": "object",
+            "properties": {
+                "feed_locations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/feeds.FeedLocation"
+                    }
                 }
             }
         },

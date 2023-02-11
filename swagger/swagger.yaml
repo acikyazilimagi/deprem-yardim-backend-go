@@ -21,6 +21,19 @@ definitions:
       timestamp:
         type: string
     type: object
+  feeds.FeedLocation:
+    description: EntryID feed entry id Latitude location latitude Longitude location
+      longitude Address location address
+    properties:
+      address:
+        type: string
+      entry_id:
+        type: integer
+      latitude:
+        type: number
+      longitude:
+        type: number
+    type: object
   feeds.Result:
     properties:
       channel:
@@ -41,6 +54,14 @@ definitions:
         type: string
       timestamp:
         type: string
+    type: object
+  feeds.UpdateFeedLocationsRequest:
+    description: FeedLocations list of update locations requests
+    properties:
+      feed_locations:
+        items:
+          $ref: '#/definitions/feeds.FeedLocation'
+        type: array
     type: object
   handler.RawFeed:
     properties:
@@ -201,15 +222,15 @@ paths:
       parameters:
       - description: RequestBody
         in: body
-        name: body
+        name: UpdateFeedLocationsRequest
         required: true
         schema:
-          $ref: '#/definitions/handler.request'
+          $ref: '#/definitions/feeds.UpdateFeedLocationsRequest'
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "202":
+          description: Accepted
       summary: Update feed locations with correct address and location
       tags:
       - Feed

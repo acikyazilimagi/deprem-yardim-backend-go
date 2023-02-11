@@ -13,8 +13,8 @@ import (
 // @Tags               Feed
 // @Accept             json
 // @Produce            json
-// @Success            200 {object} nil
-// @Param              body body request true "RequestBody"
+// @Success            202
+// @Param              UpdateFeedLocationsRequest body feeds.UpdateFeedLocationsRequest true "RequestBody"
 // @Router             /feeds/areas [PATCH]
 func UpdateFeedLocationsHandler(repo *repository.Repository) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {

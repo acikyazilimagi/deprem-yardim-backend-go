@@ -236,16 +236,19 @@ func (repo *Repository) createFeedLocation(ctx context.Context, tx pgx.Tx, locat
 		) RETURNING id;`
 
 	var id int64
-	err := tx.QueryRow(ctx, q,
-		location.FormattedAddress,
-		location.Latitude, location.Longitude,
-		location.NortheastLat, location.NortheastLng,
-		location.SouthwestLat, location.SouthwestLng,
-		location.EntryID, location.Timestamp,
-		location.Epoch, location.Reason, location.Channel,
-	).Scan(&id)
-	if err != nil {
-		return 0, fmt.Errorf("could not insert feeds location: %w", err)
+
+	if location.FormattedAddress != "" && location.Latitude != 0 && location.Longitude != 0 {
+		err := tx.QueryRow(ctx, q,
+			location.FormattedAddress,
+			location.Latitude, location.Longitude,
+			location.NortheastLat, location.NortheastLng,
+			location.SouthwestLat, location.SouthwestLng,
+			location.EntryID, location.Timestamp,
+			location.Epoch, location.Reason, location.Channel,
+		).Scan(&id)
+		if err != nil {
+			return 0, fmt.Errorf("could not insert feeds location: %w", err)
+		}
 	}
 
 	return id, nil

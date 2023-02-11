@@ -1,23 +1,40 @@
 package broker
 
 import (
+	"fmt"
 	"log"
-	"os"
-	"strings"
 
-	"github.com/Shopify/sarama"
+	kafka "github.com/confluentinc/confluent-kafka-go/kafka"
 )
 
-func NewConsumerGroup(group string) (sarama.ConsumerGroup, error) {
-	kafkaBrokers := os.Getenv("KAFKA_BROKERS")
-	if kafkaBrokers == "" {
-		log.Panic("KAFKA_BROKERS env variable must be set")
+func Consume(group string, topic string, bootstrapServers string) {
+	//HAS A HUGE LISTENING FOR LOOP BE CAREFUL
+	
+	consumer, err := kafka.NewConsumer(&kafka.ConfigMap{
+		//	"bootstrap.servers": "host1:9092,host2:9092", be careful it is just a string
+		"bootstrap.servers": bootstrapServers,
+		"group.id":          group,
+		"auto.offset.reset": "smallest"})
+
+	if err != nil {
+		log.Fatal(err)
 	}
-	brokers := strings.Split(os.Getenv("KAFKA_BROKERS"), ",")
+	
+	err = consumer.Subscribe(topic, nil)
 
-	// We need to change below configs when kafka cluster was created
-	// We don't know how we can connect to kafka
-	config := sarama.NewConfig()
-
-	return sarama.NewConsumerGroup(brokers, group, config)
+	if err != nil {
+		log.Fatal(err)
+	}
+	
+	for {
+		ev := consumer.Poll(100)
+		switch e := ev.(type) {
+		case *kafka.Message:
+			fmt.Printf("reading with %s %s -> %s\n", group, topic, string(e.Value))
+		case *kafka.Error:
+			fmt.Printf("err %+V\n", err)
+		default:
+			fmt.Printf("why am i doing this i dont know ::\n",ev)
+		}
+	}
 }

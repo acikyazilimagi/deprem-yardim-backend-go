@@ -4,12 +4,13 @@ import (
 	"log"
 	"os"
 	"strings"
-
-	"github.com/Shopify/sarama"
+	//"github.com/Shopify/sarama"
 )
+kafkaBrokers := os.Getenv("KAFKA_BROKERS")
+
 
 func NewProducer() (sarama.SyncProducer, error) {
-	kafkaBrokers := os.Getenv("KAFKA_BROKERS")
+	
 	if kafkaBrokers == "" {
 		log.Panic("KAFKA_BROKERS env variable must be set")
 	}

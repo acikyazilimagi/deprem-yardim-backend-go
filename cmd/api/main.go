@@ -46,7 +46,6 @@ func (a *Application) Register() {
 // @title               IT Afet Yardım
 // @version             1.0
 // @description         Afet Harita API
-// @host                127.0.0.1:80
 // @BasePath            /
 // @schemes             http https
 func main() {

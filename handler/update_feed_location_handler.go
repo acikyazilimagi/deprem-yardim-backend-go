@@ -15,7 +15,7 @@ import (
 // @Produce            json
 // @Success            200 {object} nil
 // @Param              body body request true "RequestBody"
-// @Router             /feeds [PATCH]
+// @Router             /feeds/areas [PATCH]
 func UpdateFeedLocationsHandler(repo *repository.Repository) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		var req feeds.UpdateFeedLocationsRequest

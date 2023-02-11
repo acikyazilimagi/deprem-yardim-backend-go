@@ -29,6 +29,8 @@ definitions:
         type: integer
       epoch:
         type: integer
+      extra_parameters:
+        type: string
       id:
         type: integer
       loc:
@@ -40,7 +42,7 @@ definitions:
       timestamp:
         type: string
     type: object
-  handler.request:
+  handler.RawFeed:
     properties:
       channel:
         type: string
@@ -52,6 +54,13 @@ definitions:
         type: string
       raw_text:
         type: string
+    type: object
+  handler.request:
+    properties:
+      feeds:
+        items:
+          $ref: '#/definitions/handler.RawFeed'
+        type: array
     type: object
   needs.CreateNeedRequest:
     properties:
@@ -184,6 +193,24 @@ paths:
               $ref: '#/definitions/feeds.Result'
             type: array
       summary: Get Feed areas with query strings
+      tags:
+      - Feed
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: RequestBody
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Update feed locations with correct address and location
       tags:
       - Feed
   /healthcheck:

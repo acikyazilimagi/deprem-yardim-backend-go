@@ -113,6 +113,34 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "patch": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Feed"
+                ],
+                "summary": "Update feed locations with correct address and location",
+                "parameters": [
+                    {
+                        "description": "RequestBody",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.request"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
             }
         },
         "/feeds/{id}": {
@@ -268,6 +296,9 @@ const docTemplate = `{
                 "epoch": {
                     "type": "integer"
                 },
+                "extra_parameters": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },
@@ -285,7 +316,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.request": {
+        "handler.RawFeed": {
             "type": "object",
             "properties": {
                 "channel": {
@@ -302,6 +333,17 @@ const docTemplate = `{
                 },
                 "raw_text": {
                     "type": "string"
+                }
+            }
+        },
+        "handler.request": {
+            "type": "object",
+            "properties": {
+                "feeds": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handler.RawFeed"
+                    }
                 }
             }
         },

@@ -250,7 +250,7 @@ func (repo *Repository) createFeedLocation(ctx context.Context, tx pgx.Tx, locat
 }
 
 func (repo *Repository) UpdateLocationIntent(ctx context.Context, id int64, intents string) error {
-	q := "UPDATE feeds_location SET reason = $1 WHERE id=$2;"
+	q := "UPDATE feeds_location SET reason = $1 WHERE entry_id=$2;"
 
 	_, err := repo.pool.Exec(ctx, q, intents, id)
 	if err != nil {

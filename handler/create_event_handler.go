@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/Shopify/sarama"
 	"github.com/gofiber/fiber/v2"
@@ -11,6 +12,10 @@ import (
 )
 
 type request struct {
+	Feeds []RawFeed `json:"feeds"`
+}
+
+type RawFeed struct {
 	ID              string `json:"id"`
 	RawText         string `json:"raw_text"`
 	Channel         string `json:"channel"`
@@ -34,20 +39,19 @@ func CreateEventHandler(producer sarama.SyncProducer) fiber.Handler {
 			return fmt.Errorf("failed to decode request. err: %w", err)
 		}
 
-		if len(req.ID) == 0 {
-			req.ID = uuid.New().String()
-		}
+		for _, f := range req.Feeds {
+			f.ID = uuid.New().String()
+			bytes, _ := json.Marshal(f)
 
-		bytes, _ := json.Marshal(req)
+			_, _, err := producer.SendMessage(&sarama.ProducerMessage{
+				Topic: fmt.Sprintf("topic.raw.%s", f.Channel),
+				Key:   sarama.StringEncoder(f.ID),
+				Value: sarama.ByteEncoder(bytes),
+			})
 
-		_, _, err := producer.SendMessage(&sarama.ProducerMessage{
-			Topic: fmt.Sprintf("topic.raw.%s", req.Channel),
-			Key:   sarama.StringEncoder(req.ID),
-			Value: sarama.ByteEncoder(bytes),
-		})
-
-		if err != nil {
-			return fmt.Errorf("failed to send event. err: %w", err)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "failed to send event. err: %s", err.Error())
+			}
 		}
 
 		return ctx.SendStatus(http.StatusCreated)

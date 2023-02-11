@@ -174,28 +174,28 @@ func (repo *Repository) CreateNeed(address, description string) (int64, error) {
 	return id, nil
 }
 
-func (repo *Repository) CreateFeed(ctx context.Context, feed feeds.Feed, location feeds.Location) error {
+func (repo *Repository) CreateFeed(ctx context.Context, feed feeds.Feed, location feeds.Location) (error, int64) {
 	tx, err := repo.pool.Begin(ctx)
 	if err != nil {
-		return fmt.Errorf("error transaction begin stage %w", err)
+		return fmt.Errorf("error transaction begin stage %w", err), 0
 	}
 	defer tx.Rollback(ctx)
 
 	entryID, err := repo.createFeedEntry(ctx, tx, feed)
 	if err != nil {
-		return err
+		return err, 0
 	}
 
 	location.EntryID = entryID
 	if _, err = repo.createFeedLocation(ctx, tx, location); err != nil {
-		return err
+		return err, 0
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return fmt.Errorf("error transaction commit stage %w", err)
+		return fmt.Errorf("error transaction commit stage %w", err), 0
 	}
 
-	return nil
+	return nil, entryID
 }
 
 func (repo *Repository) createFeedEntry(ctx context.Context, tx pgx.Tx, feed feeds.Feed) (int64, error) {

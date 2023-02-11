@@ -53,7 +53,7 @@ func GetFeedAreas(repo *repository.Repository) fiber.Handler {
 		timeStampStr := ctx.Query("time_stamp")
 		reason := ctx.Query("reason", "")
 		channel := ctx.Query("channel", "")
-		//extraParams := ctx.Query("extraParams", "")
+		extraParams := ctx.Query("extraParams", "")
 
 		var timestamp int64
 		if timeStampStr == "" {
@@ -72,9 +72,9 @@ func GetFeedAreas(repo *repository.Repository) fiber.Handler {
 		neLat, _ := strconv.ParseFloat(neLatStr, 64)
 		neLng, _ := strconv.ParseFloat(neLngStr, 64)
 
-		//extraParamsBool, _ := strconv.ParseBool(extraParams)
+		extraParamsBool, _ := strconv.ParseBool(extraParams)
 
-		data, err := repo.GetLocations(swLat, swLng, neLat, neLng, timestamp, reason, channel)
+		data, err := repo.GetLocations(swLat, swLng, neLat, neLng, timestamp, reason, channel, extraParamsBool)
 		if err != nil {
 			return ctx.JSON(err)
 		}

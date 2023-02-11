@@ -173,6 +173,9 @@ func sendIntentResolveRequest(fullText string, feedID int64) (string, error) {
 	intents := make([]string, 0)
 	for _, val := range intentResp.Results[0] {
 		if val.Score >= 0.3 {
+			if val.Label == "Alakasiz" && val.Score >= 0.5 {
+				return "", fmt.Errorf("alakasiz veri")
+			}
 			intents = append(intents, strings.ToLower(val.Label))
 		}
 	}
@@ -206,20 +209,20 @@ func (consumer *Consumer) addressResolveHandle(message *sarama.ConsumerMessage, 
 		Reason:           messagePayload.Feed.Reason,
 	}
 
-	err := consumer.repo.CreateFeed(ctx, f, messagePayload.Location)
+	err, entryID := consumer.repo.CreateFeed(ctx, f, messagePayload.Location)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error inserting feed entry and location message %#v error %s rawMessage %s", messagePayload, err.Error(), string(message.Value))
 		return
 	}
 
 	intentPayloadByte, err := json.Marshal(IntentMessagePayload{
-		FeedID:   messagePayload.Feed.ID,
+		FeedID:   entryID,
 		FullText: messagePayload.Feed.FullText,
 	})
 
 	_, _, err = consumer.producer.SendMessage(&sarama.ProducerMessage{
 		Topic: intentResolvedTopicName,
-		Key:   sarama.StringEncoder(fmt.Sprintf("%d", messagePayload.Feed.ID)),
+		Key:   sarama.StringEncoder(fmt.Sprintf("%d", entryID)),
 		Value: sarama.ByteEncoder(intentPayloadByte),
 	})
 	if err != nil {

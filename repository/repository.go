@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -25,12 +26,7 @@ var (
 		"epoch, " +
 		"reason, " +
 		"channel " +
-		"FROM feeds_location " +
-		"where southwest_lat >= %f " +
-		"and southwest_lng >= %f " +
-		"and northeast_lat <= %f " +
-		"and northeast_lng <= %f " +
-		"and epoch >= %d"
+		"FROM feeds_location where "
 )
 
 type Repository struct {
@@ -58,13 +54,35 @@ func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timesta
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	q := fmt.Sprintf(getLocationsQuery, swLat, swLng, neLat, neLng, timestamp)
+	q := getLocationsQuery
+
+	whereConditions := make([]string, 0)
+
+	if swLat != 0.0 || swLng != 0.0 || neLat != 0.0 || neLng != 0.0 {
+		whereConditions = append(whereConditions, fmt.Sprintf(" %s",
+			fmt.Sprintf(" southwest_lat >= %f "+
+				"and southwest_lng >= %f "+
+				"and northeast_lat <= %f "+
+				"and northeast_lng <= %f ", swLat, swLng, neLat, neLng)))
+	}
+
+	if timestamp != 0 {
+		if channel != "ahbap_location" {
+			whereConditions = append(whereConditions, fmt.Sprintf(" epoch >= %d ", timestamp))
+		}
+	}
+
 	if reason != "" {
-		q = fmt.Sprintf("%s and reason = '%s'", q, reason)
+		likeReason := "%" + reason + "%"
+		whereConditions = append(whereConditions, fmt.Sprintf(" reason like '%s' ", likeReason))
 	}
+
 	if channel != "" {
-		q = fmt.Sprintf("%s and channel = '%s'", q, channel)
+		whereConditions = append(whereConditions, fmt.Sprintf(" channel = '%s' ", channel))
 	}
+
+	q = fmt.Sprintf("%s %s", q, strings.Join(whereConditions, " and "))
+
 	query, err := repo.pool.Query(ctx, q)
 	if err != nil {
 		return nil, fmt.Errorf("could not query locations: %w", err)

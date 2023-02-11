@@ -181,10 +181,12 @@ func (repo *Repository) CreateFeed(ctx context.Context, feed feeds.Feed, locatio
 	}
 	defer tx.Rollback(ctx)
 
-	if _, err = repo.createFeedEntry(ctx, tx, feed); err != nil {
+	entryID, err := repo.createFeedEntry(ctx, tx, feed)
+	if err != nil {
 		return err
 	}
 
+	location.EntryID = entryID
 	if _, err = repo.createFeedLocation(ctx, tx, location); err != nil {
 		return err
 	}

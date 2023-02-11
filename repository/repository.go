@@ -22,7 +22,6 @@ var (
 		"latitude, " +
 		"longitude, " +
 		"entry_id, " +
-		"timestamp, " +
 		"epoch, " +
 		"reason, " +
 		"channel " +
@@ -98,7 +97,6 @@ func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timesta
 			&result.Loc[0],
 			&result.Loc[1],
 			&result.Entry_ID,
-			&result.Timestamp,
 			&result.Epoch,
 			&result.Reason,
 			&result.Channel)

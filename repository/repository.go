@@ -58,7 +58,7 @@ func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timesta
 		q = fmt.Sprintf("%s ,extra_parameters ", q)
 	}
 
-	q = fmt.Sprintf("%s FROM feeds_location_backup where ", q)
+	q = fmt.Sprintf("%s FROM feeds_location where ", q)
 
 	whereConditions := make([]string, 0)
 

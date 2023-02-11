@@ -12,4 +12,6 @@ FROM gcr.io/distroless/static-debian11 as runner
 
 COPY --from=builder --chown=nonroot:nonroot /app/consumer /
 
+EXPOSE 80
+
 ENTRYPOINT ["/consumer"]

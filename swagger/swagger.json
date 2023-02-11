@@ -10,7 +10,6 @@
         "contact": {},
         "version": "1.0"
     },
-    "host": "127.0.0.1:80",
     "basePath": "/",
     "paths": {
         "/events": {
@@ -85,6 +84,18 @@
                         "type": "integer",
                         "description": "Timestamp",
                         "name": "time_stamp",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Reason",
+                        "name": "reason",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Channel",
+                        "name": "channel",
                         "in": "query"
                     }
                 ],
@@ -245,6 +256,9 @@
         "feeds.Result": {
             "type": "object",
             "properties": {
+                "channel": {
+                    "type": "string"
+                },
                 "entry_id": {
                     "type": "integer"
                 },
@@ -274,6 +288,9 @@
                 "channel": {
                     "type": "string"
                 },
+                "epoch": {
+                    "type": "integer"
+                },
                 "extra_parameters": {
                     "type": "string"
                 },
@@ -282,9 +299,6 @@
                 },
                 "raw_text": {
                     "type": "string"
-                },
-                "timestamp": {
-                    "type": "integer"
                 }
             }
         },

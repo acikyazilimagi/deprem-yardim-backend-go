@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/gofiber/fiber/v2/middleware/pprof"
 	"log"
 	"net/http"
 	"os"
@@ -64,6 +65,7 @@ func main() {
 
 	app := fiber.New()
 	app.Use(cors.New())
+	app.Use(pprof.New())
 	app.Use(recover2.New())
 	app.Use(auth.New())
 	app.Use(func(c *fiber.Ctx) error {

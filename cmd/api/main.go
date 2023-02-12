@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/gofiber/fiber/v2/middleware/pprof"
 	"log"
 	"net/http"
 	"os"
@@ -10,7 +9,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gofiber/fiber/v2/middleware/pprof"
+
 	"github.com/Shopify/sarama"
+	"github.com/acikkaynak/backend-api-go/app"
 	"github.com/acikkaynak/backend-api-go/broker"
 	"github.com/acikkaynak/backend-api-go/cache"
 	"github.com/acikkaynak/backend-api-go/handler"
@@ -35,29 +37,36 @@ type Application struct {
 
 func (a *Application) Register() {
 	a.app.Get("/", handler.RedirectSwagger)
-	a.app.Get("/healthcheck", handler.Healtcheck)
+	a.app.Get("/healthcheck", handler.HealthCheck)
 	a.app.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
 	a.app.Get("/monitor", monitor.New())
 	a.app.Get("/feeds/areas", handler.GetFeedAreas(a.repo))
 	a.app.Patch("/feeds/areas", handler.UpdateFeedLocationsHandler(a.repo))
 	a.app.Get("/feeds/:id/", handler.GetFeedById(a.repo))
-	// We need to set up authentication for POST /events endpoint.
 	a.app.Post("/events", handler.CreateEventHandler(a.kafkaProducer))
+	needsHandler := handler.NewNeedsHandler(a.repo)
+	a.app.Get("/needs", needsHandler.HandleList)
+	a.app.Post("/needs", needsHandler.HandleCreate)
 	route := a.app.Group("/swagger")
 	route.Get("*", swagger.HandlerDefault)
 }
 
-// @title               IT Afet Yardım
-// @version             1.0
-// @description         Afet Harita API
-// @BasePath            /
-// @schemes             http https
+// @title						Afet Harita API
+// @version					    1.0
+// @description				    This is a sample swagger for Afet Harita
+// @host						apigo.afetharita.com
+// @BasePath					/
+// @schemes					    https http
+// @license.name				Apache License, Version 2.0 (the "License")
+// @license.url				    https://github.com/acikkaynak/deprem-yardim-backend-go/blob/main/LICENSE
+// @securityDefinitions.apiKey	ApiKeyAuth
+// @in							header
+// @name						X-Api-Key
 func main() {
-	repo := repository.New()
+	pool := app.NewPoolConnection()
+	repo := repository.New(pool)
 	defer repo.Close()
 	cacheRepo := cache.NewRedisRepository()
-
-	needsHandler := handler.NewNeedsHandler(repo)
 
 	kafkaProducer, err := broker.NewProducer()
 	if err != nil {
@@ -95,9 +104,6 @@ func main() {
 		}
 		return c.JSON(cacheData)
 	})
-
-	app.Get("/needs", needsHandler.HandleList)
-	app.Post("/needs", needsHandler.HandleCreate)
 
 	application := &Application{app: app, repo: repo, kafkaProducer: kafkaProducer}
 	application.Register()

@@ -10,6 +10,10 @@ const docTemplate = `{
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
         "contact": {},
+        "license": {
+            "name": "Apache License, Version 2.0 (the \"License\")",
+            "url": "https://github.com/acikkaynak/deprem-yardim-backend-go/blob/main/LICENSE"
+        },
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
@@ -17,6 +21,11 @@ const docTemplate = `{
     "paths": {
         "/events": {
             "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -115,6 +124,11 @@ const docTemplate = `{
                 }
             },
             "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -181,7 +195,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Healthcheck"
+                    "HealthCheck"
                 ],
                 "summary": "Show the status of server.",
                 "responses": {
@@ -222,6 +236,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -447,17 +466,24 @@ const docTemplate = `{
                 }
             }
         }
+    },
+    "securityDefinitions": {
+        "ApiKeyAuth": {
+            "type": "apiKey",
+            "name": "X-Api-Key",
+            "in": "header"
+        }
     }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "",
+	Host:             "apigo.afetharita.com",
 	BasePath:         "/",
-	Schemes:          []string{"http", "https"},
-	Title:            "IT Afet Yardım",
-	Description:      "Afet Harita API",
+	Schemes:          []string{"https", "http"},
+	Title:            "Afet Harita API",
+	Description:      "This is a sample swagger for Afet Harita",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 }

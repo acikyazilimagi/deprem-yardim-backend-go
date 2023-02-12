@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+	"github.com/acikkaynak/backend-api-go/app"
 	"github.com/acikkaynak/backend-api-go/broker"
 	"github.com/acikkaynak/backend-api-go/feeds"
 	"github.com/acikkaynak/backend-api-go/repository"
@@ -251,10 +252,10 @@ func NewConsumer() *Consumer {
 	if err != nil {
 		log.Panic("failed to init kafka producer. err:", err)
 	}
-
+	pool := app.NewPoolConnection()
 	return &Consumer{
 		ready:    make(chan bool),
-		repo:     repository.New(),
+		repo:     repository.New(pool),
 		producer: producer,
 	}
 }

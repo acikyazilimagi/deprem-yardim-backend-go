@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/ggwhite/go-masker"
-	"os"
 	"strings"
 	"time"
+
+	"github.com/ggwhite/go-masker"
 
 	"github.com/jackc/pgx/v5"
 
@@ -34,16 +34,9 @@ type Repository struct {
 	pool *pgxpool.Pool
 }
 
-func New() *Repository {
-	dbUrl := os.Getenv("DB_CONN_STR")
-	pool, err := pgxpool.New(context.Background(), dbUrl)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-		os.Exit(1)
-	}
-
+func New(p *pgxpool.Pool) *Repository {
 	return &Repository{
-		pool: pool,
+		pool: p,
 	}
 }
 

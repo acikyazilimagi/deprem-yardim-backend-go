@@ -300,3 +300,12 @@ func (repo *Repository) UpdateLocationIntent(ctx context.Context, id int64, inte
 
 	return nil
 }
+
+func (repo *Repository) UpdateFeedLocations(ctx context.Context, locations []feeds.FeedLocation) error {
+	batch := &pgx.Batch{}
+	for _, location := range locations {
+		batch.Queue("UPDATE feeds_location SET is_verified = true, latitude = $1, longitude = $2, formatted_address = $3 WHERE entry_id = $4;", location.Latitude, location.Longitude, location.Address, location.EntryID)
+	}
+	_, err := repo.pool.SendBatch(ctx, batch).Exec()
+	return err
+}

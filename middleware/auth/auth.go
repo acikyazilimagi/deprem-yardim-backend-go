@@ -8,13 +8,20 @@ import (
 
 const ApiKeyHeaderName = "X-Api-Key"
 
+var restrictedHttpMethods = map[string]struct{}{
+	"POST":   {},
+	"DELETE": {},
+	"PUT":    {},
+	"PATCH":  {},
+}
+
 func New() fiber.Handler {
 	apiKey := os.Getenv("ApiKey")
 
 	return func(ctx *fiber.Ctx) error {
 		apiKeyNeeded := false
-
-		if strings.Contains(ctx.Path(), "pprof") || ctx.Method() == fiber.MethodPost {
+		_, restrictedMethod := restrictedHttpMethods[ctx.Method()]
+		if strings.Contains(ctx.Path(), "pprof") || restrictedMethod {
 			apiKeyNeeded = true
 		}
 

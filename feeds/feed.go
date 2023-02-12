@@ -57,3 +57,14 @@ type Location struct {
 	Reason           string    `json:"reason"`
 	Channel          string    `json:"channel"`
 }
+
+type UpdateFeedLocationsRequest struct {
+	FeedLocations []FeedLocation `json:"feed_locations"`
+}
+
+type FeedLocation struct {
+	EntryID   int64   `json:"entry_id"`
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+	Address   string  `json:"address"`
+}

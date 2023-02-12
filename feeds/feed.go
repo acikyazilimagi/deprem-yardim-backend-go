@@ -22,14 +22,16 @@ type LatLng struct {
 }
 
 type Result struct {
-	ID              int64     `json:"id"`
-	Loc             []float64 `json:"loc"`
-	Entry_ID        int64     `json:"entry_id"`
-	Timestamp       *string   `json:"timestamp,omitempty"`
-	Epoch           int64     `json:"epoch,omitempty"`
-	Reason          *string   `json:"reason,omitempty"`
-	Channel         *string   `json:"channel,omitempty"`
-	ExtraParameters *string   `json:"extra_parameters,omitempty"`
+	ID                 int64     `json:"id"`
+	Loc                []float64 `json:"loc"`
+	Entry_ID           int64     `json:"entry_id"`
+	Timestamp          *string   `json:"timestamp,omitempty"`
+	Epoch              int64     `json:"epoch,omitempty"`
+	Reason             *string   `json:"reason,omitempty"`
+	Channel            *string   `json:"channel,omitempty"`
+	ExtraParameters    *string   `json:"extra_parameters,omitempty"`
+	IsLocationVerified bool      `json:"is_location_verified"`
+	IsNeedVerified     bool      `json:"is_need_verified"`
 }
 
 type LiteResult struct {

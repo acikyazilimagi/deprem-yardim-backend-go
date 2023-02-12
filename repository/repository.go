@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/ggwhite/go-masker"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/ggwhite/go-masker"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/acikkaynak/backend-api-go/needs"
@@ -25,7 +25,9 @@ var (
 		"entry_id, " +
 		"epoch, " +
 		"reason, " +
-		"channel "
+		"channel, " +
+		"is_location_verified, " +
+		"is_need_verified "
 )
 
 type Repository struct {
@@ -49,7 +51,7 @@ func (repo *Repository) Close() {
 	repo.pool.Close()
 }
 
-func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timestamp int64, reason, channel string, extraParams bool) ([]feeds.Result, error) {
+func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timestamp int64, reason, channel string, extraParams bool, isLocationVerified, isNeedVerified string) ([]feeds.Result, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
@@ -96,6 +98,13 @@ func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timesta
 		whereConditions = append(whereConditions, fmt.Sprintf(" channel ILIKE ANY(array[%s]) ", channels))
 	}
 
+	if isLocationVerified != "" {
+		whereConditions = append(whereConditions, fmt.Sprintf(" is_location_verified = %s ", isLocationVerified))
+	}
+
+	if isNeedVerified != "" {
+		whereConditions = append(whereConditions, fmt.Sprintf(" is_need_verified = %s ", isNeedVerified))
+	}
 	q = fmt.Sprintf("%s %s", q, strings.Join(whereConditions, " and "))
 
 	query, err := repo.pool.Query(ctx, q)
@@ -117,7 +126,9 @@ func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timesta
 				&result.Epoch,
 				&result.Reason,
 				&result.Channel,
-				&result.ExtraParameters)
+				&result.ExtraParameters,
+				&result.IsLocationVerified,
+				&result.IsNeedVerified)
 			if err != nil {
 				continue
 				// return nil, fmt.Errorf("could not scan locations: %w", err)
@@ -131,7 +142,9 @@ func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timesta
 				&result.Entry_ID,
 				&result.Epoch,
 				&result.Reason,
-				&result.Channel)
+				&result.Channel,
+				&result.IsLocationVerified,
+				&result.IsNeedVerified)
 			if err != nil {
 				continue
 				// return nil, fmt.Errorf("could not scan locations: %w", err)

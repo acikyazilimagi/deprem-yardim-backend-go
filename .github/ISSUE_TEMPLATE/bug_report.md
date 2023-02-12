@@ -2,10 +2,11 @@
 name: Bug Report
 about: Use for reporting bugs
 title: 'bug: '
-labels: 'bug, unchecked'
+labels: bug, unchecked
 assignees: ''
 
 ---
+
 ## Error Description
 Concise and clear summary of the nature of the error
 

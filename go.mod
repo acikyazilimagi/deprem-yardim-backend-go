@@ -5,12 +5,14 @@ go 1.19
 require (
 	github.com/Shopify/sarama v1.38.1
 	github.com/arsmn/fiber-swagger/v2 v2.31.1
+	github.com/ggwhite/go-masker v1.0.9
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/gofiber/adaptor/v2 v2.1.32
 	github.com/gofiber/fiber/v2 v2.42.0
 	github.com/google/uuid v1.3.0
 	github.com/jackc/pgx/v5 v5.2.0
 	github.com/prometheus/client_golang v1.14.0
+	github.com/stretchr/testify v1.8.1
 	github.com/swaggo/swag v1.8.10
 )
 
@@ -51,6 +53,7 @@ require (
 	github.com/onsi/gomega v1.26.0 // indirect
 	github.com/philhofer/fwd v1.1.2 // indirect
 	github.com/pierrec/lz4/v4 v4.1.17 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.39.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect

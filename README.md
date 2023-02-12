@@ -2,7 +2,7 @@
 
 # Proje Mimarisi
 
-![architecture](/docs/architecture.png)
+![architecture](/docs/architecture.jpeg)
 
 # Endpointler
 

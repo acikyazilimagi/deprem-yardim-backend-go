@@ -113,6 +113,34 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "patch": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Feed"
+                ],
+                "summary": "Update feed locations with correct address and location",
+                "parameters": [
+                    {
+                        "description": "RequestBody",
+                        "name": "UpdateFeedLocationsRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/feeds.UpdateFeedLocationsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    }
+                }
             }
         },
         "/feeds/{id}": {
@@ -256,6 +284,23 @@ const docTemplate = `{
                 }
             }
         },
+        "feeds.FeedLocation": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "entry_id": {
+                    "type": "integer"
+                },
+                "latitude": {
+                    "type": "number"
+                },
+                "longitude": {
+                    "type": "number"
+                }
+            }
+        },
         "feeds.Result": {
             "type": "object",
             "properties": {
@@ -267,6 +312,9 @@ const docTemplate = `{
                 },
                 "epoch": {
                     "type": "integer"
+                },
+                "extra_parameters": {
+                    "type": "string"
                 },
                 "id": {
                     "type": "integer"
@@ -285,7 +333,18 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.request": {
+        "feeds.UpdateFeedLocationsRequest": {
+            "type": "object",
+            "properties": {
+                "feed_locations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/feeds.FeedLocation"
+                    }
+                }
+            }
+        },
+        "handler.RawFeed": {
             "type": "object",
             "properties": {
                 "channel": {
@@ -302,6 +361,17 @@ const docTemplate = `{
                 },
                 "raw_text": {
                     "type": "string"
+                }
+            }
+        },
+        "handler.request": {
+            "type": "object",
+            "properties": {
+                "feeds": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handler.RawFeed"
+                    }
                 }
             }
         },

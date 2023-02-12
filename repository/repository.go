@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ggwhite/go-masker"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/acikkaynak/backend-api-go/needs"
@@ -111,6 +112,8 @@ func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timesta
 				continue
 				// return nil, fmt.Errorf("could not scan locations: %w", err)
 			}
+
+			result.ExtraParameters = maskFields(result.ExtraParameters)
 		} else {
 			err := query.Scan(&result.ID,
 				&result.Loc[0],
@@ -131,6 +134,28 @@ func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timesta
 	return results, nil
 }
 
+func maskFields(extraParams *string) *string {
+	if extraParams == nil || *extraParams == "" {
+		return nil
+	}
+
+	var jsonMap map[string]interface{}
+	extraParamsStr := strings.ReplaceAll(*extraParams, " nan,", "'',")
+	extraParamsStr = strings.ReplaceAll(extraParamsStr, " nan}", "''}")
+	if err := json.Unmarshal([]byte(strings.ReplaceAll(extraParamsStr, "'", "\"")), &jsonMap); err != nil {
+		fmt.Println(extraParamsStr, *extraParams)
+		return extraParams
+	}
+
+	jsonMap["tel"] = masker.Telephone(fmt.Sprintf("%v", jsonMap["tel"]))
+	jsonMap["numara"] = masker.Telephone(fmt.Sprintf("%v", jsonMap["numara"]))
+	jsonMap["isim-soyisim"] = masker.Telephone(fmt.Sprintf("%v", jsonMap["isim-soyisim"]))
+	jsonMap["name_surname"] = masker.Telephone(fmt.Sprintf("%v", jsonMap["name_surname"]))
+	marshal, _ := json.Marshal(jsonMap)
+	s := string(marshal)
+	return &s
+}
+
 func (repo *Repository) GetFeed(id int64) (*feeds.Feed, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
@@ -146,13 +171,7 @@ func (repo *Repository) GetFeed(id int64) (*feeds.Feed, error) {
 	}
 
 	if feed.ExtraParameters != nil {
-		var jsonMap map[string]interface{}
-		json.Unmarshal([]byte(*feed.ExtraParameters), &jsonMap)
-		delete(jsonMap, "tel")
-		delete(jsonMap, "name_surname")
-		marshal, _ := json.Marshal(jsonMap)
-		s := string(marshal)
-		feed.ExtraParameters = &s
+		feed.ExtraParameters = maskFields(feed.ExtraParameters)
 	}
 
 	return &feed, nil
@@ -299,4 +318,13 @@ func (repo *Repository) UpdateLocationIntent(ctx context.Context, id int64, inte
 	}
 
 	return nil
+}
+
+func (repo *Repository) UpdateFeedLocations(ctx context.Context, locations []feeds.FeedLocation) error {
+	batch := &pgx.Batch{}
+	for _, location := range locations {
+		batch.Queue("UPDATE feeds_location SET is_verified = true, latitude = $1, longitude = $2, formatted_address = $3 WHERE entry_id = $4;", location.Latitude, location.Longitude, location.Address, location.EntryID)
+	}
+	_, err := repo.pool.SendBatch(ctx, batch).Exec()
+	return err
 }

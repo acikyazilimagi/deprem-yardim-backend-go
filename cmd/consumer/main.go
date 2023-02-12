@@ -136,6 +136,8 @@ func (consumer *Consumer) intentResolveHandle(message *sarama.ConsumerMessage, s
 		return
 	}
 
+	//TODO NEEDS
+
 	session.MarkMessage(message, "")
 	session.Commit()
 }

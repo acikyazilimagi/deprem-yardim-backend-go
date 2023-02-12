@@ -1,11 +1,14 @@
 package repository
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/ggwhite/go-masker"
+	"github.com/pashagolub/pgxmock/v2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -44,4 +47,34 @@ func TestParse(t *testing.T) {
 	var jsonMap map[string]interface{}
 
 	assert.NoError(t, json.Unmarshal([]byte(str), &jsonMap))
+}
+
+func Test_UpdateLocationIntent(t *testing.T) {
+	//Given
+	ctx := context.Background()
+	mock, err := pgxmock.NewPool()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer mock.Close()
+
+	id := int64(333)
+	reason := "kara"
+
+	mock.ExpectExec(regexp.QuoteMeta(`UPDATE feeds_location SET reason = $1 WHERE entry_id=$2;`)).
+		WithArgs(reason, id).
+		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
+
+	repo := New(mock)
+
+	//When
+	err = repo.UpdateLocationIntent(ctx, id, reason)
+
+	//Then
+	if err != nil {
+		t.Errorf("error was not expected while updating: %s", err)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
 }

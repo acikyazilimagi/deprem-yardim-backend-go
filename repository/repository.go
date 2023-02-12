@@ -9,12 +9,12 @@ import (
 
 	"github.com/ggwhite/go-masker"
 
-	"github.com/jackc/pgx/v5"
+	pgx "github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/acikkaynak/backend-api-go/needs"
 
 	"github.com/acikkaynak/backend-api-go/feeds"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var (
@@ -30,11 +30,20 @@ var (
 		"is_need_verified "
 )
 
-type Repository struct {
-	pool *pgxpool.Pool
+type PgxIface interface {
+	Begin(context.Context) (pgx.Tx, error)
+	Query(context.Context, string, ...any) (pgx.Rows, error)
+	QueryRow(context.Context, string, ...any) pgx.Row
+	Exec(context.Context, string, ...any) (pgconn.CommandTag, error)
+	SendBatch(context.Context, *pgx.Batch) pgx.BatchResults
+	Close()
 }
 
-func New(p *pgxpool.Pool) *Repository {
+type Repository struct {
+	pool PgxIface
+}
+
+func New(p PgxIface) *Repository {
 	return &Repository{
 		pool: p,
 	}

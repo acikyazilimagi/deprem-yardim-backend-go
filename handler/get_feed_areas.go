@@ -9,28 +9,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func IsValidReason(key string) bool {
-	reasons := []string{"", "enkaz", "erzak"}
-
-	for _, reason := range reasons {
-		if reason == key {
-			return true
-		}
-	}
-	return false
-}
-
-func IsValidChannel(key string) bool {
-	channels := []string{"", "twitter", "babala"}
-
-	for _, channel := range channels {
-		if channel == key {
-			return true
-		}
-	}
-	return false
-}
-
 // getFeedAreas godoc
 // @Summary            Get Feed areas with query strings
 // @Tags               Feed

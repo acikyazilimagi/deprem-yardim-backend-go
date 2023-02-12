@@ -78,12 +78,22 @@ func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timesta
 	}
 
 	if reason != "" {
-		likeReason := "%" + reason + "%"
-		whereConditions = append(whereConditions, fmt.Sprintf(" reason like '%s' ", likeReason))
+		var reasonArr []string
+		for _, r := range strings.Split(reason, ",") {
+			reasonArr = append(reasonArr, fmt.Sprintf("'%s'", "%"+r+"%"))
+		}
+		reasons := strings.Join(reasonArr, ",")
+		whereConditions = append(whereConditions, fmt.Sprintf(" reason ILIKE ANY(array[%s]) ", reasons))
 	}
 
 	if channel != "" {
-		whereConditions = append(whereConditions, fmt.Sprintf(" channel = '%s' ", channel))
+		//whereConditions = append(whereConditions, fmt.Sprintf(" channel = '%s' ", channel))
+		var channelArr []string
+		for _, r := range strings.Split(channel, ",") {
+			channelArr = append(channelArr, fmt.Sprintf("'%s'", "%"+r+"%"))
+		}
+		channels := strings.Join(channelArr, ",")
+		whereConditions = append(whereConditions, fmt.Sprintf(" channel ILIKE ANY(array[%s]) ", channels))
 	}
 
 	q = fmt.Sprintf("%s %s", q, strings.Join(whereConditions, " and "))

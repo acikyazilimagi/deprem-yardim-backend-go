@@ -28,7 +28,8 @@ var (
 		"reason, " +
 		"channel, " +
 		"is_location_verified, " +
-		"is_need_verified "
+		"is_need_verified " +
+		"needs"
 )
 
 type Repository struct {
@@ -129,7 +130,8 @@ func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timesta
 				&result.Channel,
 				&result.IsLocationVerified,
 				&result.IsNeedVerified,
-				&result.ExtraParameters)
+				&result.ExtraParameters,
+				&result.Needs)
 			if err != nil {
 				continue
 				// return nil, fmt.Errorf("could not scan locations: %w", err)
@@ -147,7 +149,8 @@ func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timesta
 				&result.Reason,
 				&result.Channel,
 				&result.IsLocationVerified,
-				&result.IsNeedVerified)
+				&result.IsNeedVerified,
+				&result.Needs)
 			if err != nil {
 				continue
 				// return nil, fmt.Errorf("could not scan locations: %w", err)
@@ -190,12 +193,13 @@ func (repo *Repository) GetFeed(id int64) (*feeds.Feed, error) {
 	defer cancel()
 
 	row := repo.pool.QueryRow(ctx, fmt.Sprintf(
-		"SELECT fe.id, full_text, is_resolved, fe.channel, fe.timestamp, fe.extra_parameters, fl.formatted_address, fl.reason "+
+		"SELECT fe.id, full_text, is_resolved, fe.channel, fe.timestamp, fe.extra_parameters, fl.formatted_address, fl.reason, fl.needs "+
 			"FROM feeds_entry fe, feeds_location fl "+
 			"WHERE fe.id = fl.entry_id AND fe.id=%d", id))
 
 	var feed feeds.Feed
-	if err := row.Scan(&feed.ID, &feed.FullText, &feed.IsResolved, &feed.Channel, &feed.Timestamp, &feed.ExtraParameters, &feed.FormattedAddress, &feed.Reason); err != nil {
+	if err := row.Scan(&feed.ID, &feed.FullText, &feed.IsResolved, &feed.Channel, &feed.Timestamp,
+		&feed.ExtraParameters, &feed.FormattedAddress, &feed.Reason, &feed.Needs); err != nil {
 		return nil, fmt.Errorf("could not query feed with id : %w", err)
 	}
 

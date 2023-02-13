@@ -14,6 +14,7 @@ type Feed struct {
 	ExtraParameters  *string   `json:"extra_parameters,omitempty"`
 	FormattedAddress string    `json:"formatted_address,omitempty"`
 	Reason           *string   `json:"reason,omitempty"`
+	Needs            *string   `json:"needs,omitempty"`
 }
 
 type LatLng struct {
@@ -32,6 +33,7 @@ type Result struct {
 	ExtraParameters    *string   `json:"extra_parameters,omitempty"`
 	IsLocationVerified bool      `json:"is_location_verified"`
 	IsNeedVerified     bool      `json:"is_need_verified"`
+	Needs              *string   `json:"needs,omitempty"`
 }
 
 type LiteResult struct {

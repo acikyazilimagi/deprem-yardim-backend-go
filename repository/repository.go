@@ -20,7 +20,7 @@ import (
 
 var (
 	psql                   = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
-	feedsLocationTableName = "feeds_location_backup"
+	feedsLocationTableName = "feeds_location"
 )
 
 type Repository struct {

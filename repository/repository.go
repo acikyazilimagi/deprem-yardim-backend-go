@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/ggwhite/go-masker"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/ggwhite/go-masker"
 
 	"github.com/jackc/pgx/v5"
 
@@ -52,7 +53,7 @@ func (repo *Repository) Close() {
 }
 
 func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timestamp int64, reason, channel string, extraParams bool, isLocationVerified, isNeedVerified string) ([]feeds.Result, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
 
 	q := getLocationsQuery
@@ -126,9 +127,9 @@ func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timesta
 				&result.Epoch,
 				&result.Reason,
 				&result.Channel,
-				&result.ExtraParameters,
 				&result.IsLocationVerified,
-				&result.IsNeedVerified)
+				&result.IsNeedVerified,
+				&result.ExtraParameters)
 			if err != nil {
 				continue
 				// return nil, fmt.Errorf("could not scan locations: %w", err)

@@ -135,7 +135,9 @@ func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timesta
 				// return nil, fmt.Errorf("could not scan locations: %w", err)
 			}
 
-			result.ExtraParameters = maskFields(result.ExtraParameters)
+			if *result.Channel == "twitter" || *result.Channel == "discord" || *result.Channel == "babala" {
+				result.ExtraParameters = maskFields(result.ExtraParameters)
+			}
 		} else {
 			err := query.Scan(&result.ID,
 				&result.Loc[0],
@@ -197,7 +199,7 @@ func (repo *Repository) GetFeed(id int64) (*feeds.Feed, error) {
 		return nil, fmt.Errorf("could not query feed with id : %w", err)
 	}
 
-	if feed.ExtraParameters != nil {
+	if feed.Channel == "twitter" || feed.Channel == "discord" || feed.Channel == "babala" {
 		feed.ExtraParameters = maskFields(feed.ExtraParameters)
 	}
 

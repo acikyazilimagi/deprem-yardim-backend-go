@@ -41,6 +41,7 @@ func (a *Application) Register() {
 	// We need to set up authentication for POST /events endpoint.
 	a.app.Post("/events", handler.CreateEventHandler(a.kafkaProducer))
 	a.app.Get("/caches/prune", handler.InvalidateCache())
+	a.app.Get("/reasons", handler.GetReasonsHandler(a.repo))
 	route := a.app.Group("/swagger")
 	route.Get("*", swagger.HandlerDefault)
 }

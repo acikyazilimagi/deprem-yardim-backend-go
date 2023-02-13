@@ -4,17 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/jackc/pgx/v5/pgconn"
 	"strings"
 	"time"
 
 	"github.com/ggwhite/go-masker"
 
-	pgx "github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
-
-	"github.com/acikkaynak/backend-api-go/needs"
-
 	"github.com/acikkaynak/backend-api-go/feeds"
+	"github.com/acikkaynak/backend-api-go/needs"
+	pgx "github.com/jackc/pgx/v5"
 )
 
 var (
@@ -54,7 +52,7 @@ func (repo *Repository) Close() {
 }
 
 func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timestamp int64, reason, channel string, extraParams bool, isLocationVerified, isNeedVerified string) ([]feeds.Result, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
 
 	q := getLocationsQuery
@@ -128,15 +126,17 @@ func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timesta
 				&result.Epoch,
 				&result.Reason,
 				&result.Channel,
-				&result.ExtraParameters,
 				&result.IsLocationVerified,
-				&result.IsNeedVerified)
+				&result.IsNeedVerified,
+				&result.ExtraParameters)
 			if err != nil {
 				continue
 				// return nil, fmt.Errorf("could not scan locations: %w", err)
 			}
 
-			result.ExtraParameters = maskFields(result.ExtraParameters)
+			if *result.Channel == "twitter" || *result.Channel == "discord" || *result.Channel == "babala" {
+				result.ExtraParameters = maskFields(result.ExtraParameters)
+			}
 		} else {
 			err := query.Scan(&result.ID,
 				&result.Loc[0],
@@ -167,15 +167,18 @@ func maskFields(extraParams *string) *string {
 	var jsonMap map[string]interface{}
 	extraParamsStr := strings.ReplaceAll(*extraParams, " nan,", "'',")
 	extraParamsStr = strings.ReplaceAll(extraParamsStr, " nan}", "''}")
+	extraParamsStr = strings.ReplaceAll(extraParamsStr, "\\", "")
+
 	if err := json.Unmarshal([]byte(strings.ReplaceAll(extraParamsStr, "'", "\"")), &jsonMap); err != nil {
-		fmt.Println(extraParamsStr, *extraParams)
-		return extraParams
+		return nil
 	}
 
 	jsonMap["tel"] = masker.Telephone(fmt.Sprintf("%v", jsonMap["tel"]))
+	jsonMap["telefon"] = masker.Telephone(fmt.Sprintf("%v", jsonMap["telefon"]))
 	jsonMap["numara"] = masker.Telephone(fmt.Sprintf("%v", jsonMap["numara"]))
-	jsonMap["isim-soyisim"] = masker.Telephone(fmt.Sprintf("%v", jsonMap["isim-soyisim"]))
-	jsonMap["name_surname"] = masker.Telephone(fmt.Sprintf("%v", jsonMap["name_surname"]))
+	jsonMap["isim-soyisim"] = masker.Name(fmt.Sprintf("%v", jsonMap["isim-soyisim"]))
+	jsonMap["name_surname"] = masker.Name(fmt.Sprintf("%v", jsonMap["name_surname"]))
+	jsonMap["name"] = masker.Name(fmt.Sprintf("%v", jsonMap["name"]))
 	marshal, _ := json.Marshal(jsonMap)
 	s := string(marshal)
 	return &s
@@ -195,7 +198,7 @@ func (repo *Repository) GetFeed(id int64) (*feeds.Feed, error) {
 		return nil, fmt.Errorf("could not query feed with id : %w", err)
 	}
 
-	if feed.ExtraParameters != nil {
+	if feed.Channel == "twitter" || feed.Channel == "discord" || feed.Channel == "babala" {
 		feed.ExtraParameters = maskFields(feed.ExtraParameters)
 	}
 

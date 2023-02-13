@@ -3,20 +3,18 @@ package main
 import (
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/gofiber/fiber/v2/middleware/pprof"
 
 	"github.com/Shopify/sarama"
 	"github.com/acikkaynak/backend-api-go/app"
 	"github.com/acikkaynak/backend-api-go/broker"
-	"github.com/acikkaynak/backend-api-go/cache"
 	"github.com/acikkaynak/backend-api-go/handler"
 	"github.com/acikkaynak/backend-api-go/middleware/auth"
+	"github.com/acikkaynak/backend-api-go/middleware/cache"
 	"github.com/acikkaynak/backend-api-go/repository"
 	_ "github.com/acikkaynak/backend-api-go/swagger"
 	swagger "github.com/arsmn/fiber-swagger/v2"
@@ -24,8 +22,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/monitor"
-	recover2 "github.com/gofiber/fiber/v2/middleware/recover"
-	"github.com/google/uuid"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -44,6 +41,8 @@ func (a *Application) Register() {
 	a.app.Patch("/feeds/areas", handler.UpdateFeedLocationsHandler(a.repo))
 	a.app.Get("/feeds/:id/", handler.GetFeedById(a.repo))
 	a.app.Post("/events", handler.CreateEventHandler(a.kafkaProducer))
+	a.app.Get("/caches/prune", handler.InvalidateCache())
+	a.app.Get("/reasons", handler.GetReasonsHandler(a.repo))
 	needsHandler := handler.NewNeedsHandler(a.repo)
 	a.app.Get("/needs", needsHandler.HandleList)
 	a.app.Post("/needs", needsHandler.HandleCreate)
@@ -66,7 +65,6 @@ func main() {
 	pool := app.NewPoolConnection()
 	repo := repository.New(pool)
 	defer repo.Close()
-	cacheRepo := cache.NewRedisRepository()
 
 	kafkaProducer, err := broker.NewProducer()
 	if err != nil {
@@ -75,35 +73,10 @@ func main() {
 
 	app := fiber.New()
 	app.Use(cors.New())
-	app.Use(recover2.New())
+	app.Use(recover.New())
 	app.Use(auth.New())
 	app.Use(pprof.New())
-	app.Use(func(c *fiber.Ctx) error {
-		if c.Path() == "/healthcheck" ||
-			c.Path() == "/metrics" ||
-			c.Path() == "/monitor" {
-			return c.Next()
-		}
-
-		reqURI := c.OriginalURL()
-		hashURL := uuid.NewSHA1(uuid.NameSpaceOID, []byte(reqURI)).String()
-		if c.Method() != http.MethodGet {
-			// Don't cache write endpoints. We can maintain of list to exclude certain http methods later.
-			// Since there will be an update in db, better to remove cache entries for this url
-			err := cacheRepo.Delete(hashURL)
-			if err != nil {
-				fmt.Println(err)
-			}
-			return c.Next()
-		}
-		cacheData := cacheRepo.Get(hashURL)
-		if cacheData == nil {
-			c.Next()
-			cacheRepo.SetKey(hashURL, c.Response().Body(), 5*time.Minute)
-			return nil
-		}
-		return c.JSON(cacheData)
-	})
+	app.Use(cache.New())
 
 	application := &Application{app: app, repo: repo, kafkaProducer: kafkaProducer}
 	application.Register()

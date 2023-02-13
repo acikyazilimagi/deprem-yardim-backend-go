@@ -4,39 +4,41 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgconn"
+
 	"github.com/ggwhite/go-masker"
-	"github.com/jackc/pgx/v5"
 	"github.com/lib/pq"
 
 	"github.com/acikkaynak/backend-api-go/needs"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/acikkaynak/backend-api-go/feeds"
-	"github.com/jackc/pgx/v5/pgxpool"
+	pgx "github.com/jackc/pgx/v5"
 )
 
 var (
 	psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 )
 
-type Repository struct {
-	pool *pgxpool.Pool
+type PgxIface interface {
+	Begin(context.Context) (pgx.Tx, error)
+	Query(context.Context, string, ...any) (pgx.Rows, error)
+	QueryRow(context.Context, string, ...any) pgx.Row
+	Exec(context.Context, string, ...any) (pgconn.CommandTag, error)
+	SendBatch(context.Context, *pgx.Batch) pgx.BatchResults
+	Close()
 }
 
-func New() *Repository {
-	dbUrl := os.Getenv("DB_CONN_STR")
-	pool, err := pgxpool.New(context.Background(), dbUrl)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-		os.Exit(1)
-	}
+type Repository struct {
+	pool PgxIface
+}
 
+func New(p PgxIface) *Repository {
 	return &Repository{
-		pool: pool,
+		pool: p,
 	}
 }
 

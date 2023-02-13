@@ -55,7 +55,20 @@ func GetFeedAreas(repo *repository.Repository) fiber.Handler {
 
 		extraParamsBool, _ := strconv.ParseBool(extraParams)
 
-		data, err := repo.GetLocations(swLat, swLng, neLat, neLng, timestamp, reason, channel, extraParamsBool, isLocationVerified, isNeedVerified)
+		getLocationsQuery := &repository.GetLocationsQuery{
+			SwLat:              swLat,
+			SwLng:              swLng,
+			NeLat:              neLat,
+			NeLng:              neLng,
+			Timestamp:          timestamp,
+			Reason:             reason,
+			Channel:            channel,
+			ExtraParams:        extraParamsBool,
+			IsLocationVerified: isLocationVerified,
+			IsNeedVerified:     isNeedVerified,
+		}
+
+		data, err := repo.GetLocations(getLocationsQuery)
 		if err != nil {
 			return ctx.JSON(err)
 		}

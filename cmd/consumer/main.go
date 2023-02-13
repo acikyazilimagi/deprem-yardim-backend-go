@@ -131,12 +131,19 @@ func (consumer *Consumer) intentResolveHandle(message *sarama.ConsumerMessage, s
 		return
 	}
 
-	if err := consumer.repo.UpdateLocationIntent(ctx, messagePayload.FeedID, intents); err != nil {
-		fmt.Fprintf(os.Stderr, "error updating feed entry and location intent %#v error %s rawMessage %s", messagePayload, err.Error(), string(message.Value))
+	needs, err := sendNeedsResolveRequest(messagePayload.FullText, messagePayload.FeedID)
+	if err != nil {
+		session.MarkMessage(message, "")
+		session.Commit()
 		return
 	}
 
-	//TODO NEEDS
+	if err := consumer.repo.UpdateLocationIntentAndNeeds(ctx, messagePayload.FeedID, intents, needs); err != nil {
+		fmt.Fprintf(os.Stderr,
+			"error updating feed entry and location intent %#v error %s rawMessage %s",
+			messagePayload, err.Error(), string(message.Value))
+		return
+	}
 
 	session.MarkMessage(message, "")
 	session.Commit()
@@ -184,6 +191,43 @@ func sendIntentResolveRequest(fullText string, feedID int64) (string, error) {
 	}
 
 	return strings.Join(intents, ","), nil
+}
+
+func sendNeedsResolveRequest(fullText string, feedID int64) (string, error) {
+	jsonBytes, err := json.Marshal(NeedsRequest{
+		Inputs: []string{fullText},
+	})
+	fmt.Println(os.Getenv("NEEDS_RESOLVER_API_URL"))
+
+	req, err := http.NewRequest("POST", os.Getenv("NEEDS_RESOLVER_API_URL"), bytes.NewReader(jsonBytes))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "could not prepare http request NeedsMessagePayload error message %s error %s", fullText, err.Error())
+		return "", err
+	}
+
+	// todo(bugthesystem): needs API needs to have a secure access
+	req.Header.Add("Authorization", "Bearer "+os.Getenv("NEEDS_RESOLVER_API_KEY"))
+	req.Header.Add("content-type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if resp.StatusCode != http.StatusOK {
+		fmt.Fprintf(os.Stderr, "could not get response NeedsMessagePayload feedID %d status %d", feedID, resp.StatusCode)
+		return "", err
+	}
+
+	needsResp := &NeedsResponse{}
+	if err := json.NewDecoder(resp.Body).Decode(&needsResp); err != nil {
+		fmt.Fprintf(os.Stderr, "could not get decode response NeedsMessagePayload feedID %d err %s", feedID, err.Error())
+		return "", err
+	}
+
+	if len(needsResp.Response) == 0 {
+		fmt.Fprintf(os.Stderr, "no data found on response NeedsMessagePayload feedID %d", feedID)
+		return "", nil
+	}
+
+	// todo(bugthesystem): handle response with an empty Processed
+	return strings.Join(needsResp.Response[0].Processed.DetailedIntentTags, ","), nil
 }
 
 func (consumer *Consumer) addressResolveHandle(message *sarama.ConsumerMessage, session sarama.ConsumerGroupSession) {
@@ -326,4 +370,18 @@ type IntentResponse struct {
 type Intent []struct {
 	Label string  `json:"label"`
 	Score float64 `json:"score"`
+}
+
+type NeedsRequest struct {
+	Inputs []string `json:"inputs"`
+}
+
+type NeedsResponse struct {
+	Response []struct {
+		String    []string `json:"string"`
+		Processed struct {
+			Intent             []string `json:"intent"`
+			DetailedIntentTags []string `json:"detailed_intent_tags"`
+		} `json:"processed"`
+	} `json:"response"`
 }

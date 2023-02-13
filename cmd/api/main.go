@@ -40,7 +40,7 @@ func (a *Application) Register() {
 	a.app.Get("/feeds/:id/", handler.GetFeedById(a.repo))
 	// We need to set up authentication for POST /events endpoint.
 	a.app.Post("/events", handler.CreateEventHandler(a.kafkaProducer))
-	a.app.Post("/caches/prune", handler.InvalidateCache())
+	a.app.Get("/caches/prune", handler.InvalidateCache())
 	route := a.app.Group("/swagger")
 	route.Get("*", swagger.HandlerDefault)
 }

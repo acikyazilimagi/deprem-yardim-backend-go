@@ -50,7 +50,7 @@ func (repo *Repository) Close() {
 }
 
 func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timestamp int64, reason, channel string, extraParams bool) ([]feeds.Result, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
 	q := getLocationsQuery
@@ -152,15 +152,18 @@ func maskFields(extraParams *string) *string {
 	var jsonMap map[string]interface{}
 	extraParamsStr := strings.ReplaceAll(*extraParams, " nan,", "'',")
 	extraParamsStr = strings.ReplaceAll(extraParamsStr, " nan}", "''}")
+	extraParamsStr = strings.ReplaceAll(extraParamsStr, "\\", "")
+
 	if err := json.Unmarshal([]byte(strings.ReplaceAll(extraParamsStr, "'", "\"")), &jsonMap); err != nil {
-		fmt.Println(extraParamsStr, *extraParams)
-		return extraParams
+		return nil
 	}
 
 	jsonMap["tel"] = masker.Telephone(fmt.Sprintf("%v", jsonMap["tel"]))
+	jsonMap["telefon"] = masker.Telephone(fmt.Sprintf("%v", jsonMap["telefon"]))
 	jsonMap["numara"] = masker.Telephone(fmt.Sprintf("%v", jsonMap["numara"]))
-	jsonMap["isim-soyisim"] = masker.Telephone(fmt.Sprintf("%v", jsonMap["isim-soyisim"]))
-	jsonMap["name_surname"] = masker.Telephone(fmt.Sprintf("%v", jsonMap["name_surname"]))
+	jsonMap["isim-soyisim"] = masker.Name(fmt.Sprintf("%v", jsonMap["isim-soyisim"]))
+	jsonMap["name_surname"] = masker.Name(fmt.Sprintf("%v", jsonMap["name_surname"]))
+	jsonMap["name"] = masker.Name(fmt.Sprintf("%v", jsonMap["name"]))
 	marshal, _ := json.Marshal(jsonMap)
 	s := string(marshal)
 	return &s

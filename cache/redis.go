@@ -34,7 +34,6 @@ func (repository *RedisRepository) SetKey(key string, value interface{}, ttl tim
 func (repository *RedisRepository) Get(key string) interface{} {
 	status := repository.client.Get(key)
 	if status.Err() != nil {
-		fmt.Println(status.Err())
 		return nil
 	}
 
@@ -56,4 +55,9 @@ func (repository *RedisRepository) Delete(key string) error {
 	}
 
 	return nil
+}
+
+func (repository *RedisRepository) Prune() error {
+	resp := repository.client.FlushDB()
+	return resp.Err()
 }

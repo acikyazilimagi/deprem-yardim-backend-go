@@ -40,23 +40,6 @@ var (
 
 // Message will be handled in ConsumeClaim method.
 func main() {
-	/*
-		resp, err := http.Get(os.Getenv(AWS_TASK_METADATA_URL_ENV_VAR) + "/taskWithTags")
-		if err != nil {
-			fmt.Println("could not get task metadata info")
-		}
-
-		var respData map[string]string
-		if err := json.NewDecoder(resp.Body).Decode(&respData); err != nil {
-			fmt.Println("could not decode task metadata info")
-		} else {
-			splitted := strings.Split(respData["TaskARN"], "/")
-			if len(splitted) > 1 {
-				taskID = splitted[len(splitted)-1]
-			}
-		}
-	*/
-	
 	http.HandleFunc("/healthcheck", func(writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(200)
 	})
@@ -198,7 +181,6 @@ func sendNeedsResolveRequest(fullText string, feedID int64) ([]feeds.NeedItem, e
 	jsonBytes, err := json.Marshal(NeedsRequest{
 		Inputs: []string{fullText},
 	})
-	fmt.Println(os.Getenv("NEEDS_RESOLVER_API_URL"))
 
 	req, err := http.NewRequest("POST", os.Getenv("NEEDS_RESOLVER_API_URL"), bytes.NewReader(jsonBytes))
 	if err != nil {
@@ -206,7 +188,6 @@ func sendNeedsResolveRequest(fullText string, feedID int64) ([]feeds.NeedItem, e
 		return nil, err
 	}
 
-	req.Header.Add("Authorization", "Bearer "+os.Getenv("NEEDS_RESOLVER_API_KEY"))
 	req.Header.Add("content-type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)

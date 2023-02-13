@@ -127,10 +127,14 @@ definitions:
           $ref: '#/definitions/needs.Need'
         type: array
     type: object
+host: apigo.afetharita.com
 info:
   contact: {}
-  description: Afet Harita API
-  title: IT Afet Yardım
+  description: This is a sample swagger for Afet Harita
+  license:
+    name: Apache License, Version 2.0 (the "License")
+    url: https://github.com/acikkaynak/deprem-yardim-backend-go/blob/main/LICENSE
+  title: Afet Harita API
   version: "1.0"
 paths:
   /events:
@@ -149,6 +153,8 @@ paths:
       responses:
         "200":
           description: OK
+      security:
+      - ApiKeyAuth: []
       summary: Create Event areas with request body
       tags:
       - Event
@@ -232,6 +238,8 @@ paths:
       responses:
         "202":
           description: Accepted
+      security:
+      - ApiKeyAuth: []
       summary: Update feed locations with correct address and location
       tags:
       - Feed
@@ -249,7 +257,7 @@ paths:
             type: string
       summary: Show the status of server.
       tags:
-      - Healthcheck
+      - HealthCheck
   /needs:
     get:
       parameters:
@@ -283,10 +291,17 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/needs.LiteNeed'
+      security:
+      - ApiKeyAuth: []
       summary: Create Need
       tags:
       - Need
 schemes:
-- http
 - https
+- http
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: X-Api-Key
+    type: apiKey
 swagger: "2.0"

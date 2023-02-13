@@ -1,9 +1,10 @@
 package auth
 
 import (
-	"github.com/gofiber/fiber/v2"
 	"os"
 	"strings"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 const ApiKeyHeaderName = "X-Api-Key"
@@ -21,7 +22,7 @@ func New() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		apiKeyNeeded := false
 		_, restrictedMethod := restrictedHttpMethods[ctx.Method()]
-		if strings.Contains(ctx.Path(), "pprof") || restrictedMethod {
+		if strings.Contains(ctx.Path(), "pprof") || strings.Contains(ctx.Path(), "swagger") || restrictedMethod {
 			apiKeyNeeded = true
 		}
 

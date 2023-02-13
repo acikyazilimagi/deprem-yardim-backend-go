@@ -1,18 +1,20 @@
 package handler
 
 import (
+	"strconv"
+
 	"github.com/acikkaynak/backend-api-go/repository"
 	"github.com/gofiber/fiber/v2"
-	"strconv"
 )
 
-// getFeedById godoc
-// @Summary            Get Feeds with given id
-// @Tags               Feed
-// @Produce            json
-// @Success            200 {object} feeds.Feed
-// @Param              id path integer true "Feed Id"
-// @Router             /feeds/{id} [GET]
+// GetFeedById godoc
+//
+//	@Summary	Get Feeds with given id
+//	@Tags		Feed
+//	@Produce	json
+//	@Success	200	{object}	feeds.Feed
+//	@Param		id	path		integer	true	"Feed Id"
+//	@Router		/feeds/{id} [GET]
 func GetFeedById(repo *repository.Repository) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		feedIDStr := ctx.Params("id")

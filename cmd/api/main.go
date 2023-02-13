@@ -7,6 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/gofiber/fiber/v2/middleware/pprof"
+
 	"github.com/Shopify/sarama"
 	"github.com/acikkaynak/backend-api-go/broker"
 	"github.com/acikkaynak/backend-api-go/handler"
@@ -17,9 +19,9 @@ import (
 	swagger "github.com/arsmn/fiber-swagger/v2"
 	"github.com/gofiber/adaptor/v2"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/monitor"
-	"github.com/gofiber/fiber/v2/middleware/pprof"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -32,30 +34,36 @@ type Application struct {
 
 func (a *Application) Register() {
 	a.app.Get("/", handler.RedirectSwagger)
-	a.app.Get("/healthcheck", handler.Healtcheck)
+	a.app.Get("/healthcheck", handler.HealthCheck)
 	a.app.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
 	a.app.Get("/monitor", monitor.New())
 	a.app.Get("/feeds/areas", handler.GetFeedAreas(a.repo))
 	a.app.Patch("/feeds/areas", handler.UpdateFeedLocationsHandler(a.repo))
 	a.app.Get("/feeds/:id/", handler.GetFeedById(a.repo))
-	// We need to set up authentication for POST /events endpoint.
 	a.app.Post("/events", handler.CreateEventHandler(a.kafkaProducer))
 	a.app.Get("/caches/prune", handler.InvalidateCache())
 	a.app.Get("/reasons", handler.GetReasonsHandler(a.repo))
+	needsHandler := handler.NewNeedsHandler(a.repo)
+	a.app.Get("/needs", needsHandler.HandleList)
+	a.app.Post("/needs", needsHandler.HandleCreate)
 	route := a.app.Group("/swagger")
 	route.Get("*", swagger.HandlerDefault)
 }
 
-// @title               IT Afet Yardım
-// @version             1.0
-// @description         Afet Harita API
-// @BasePath            /
-// @schemes             http https
+// @title						Afet Harita API
+// @version					    1.0
+// @description				    This is a sample swagger for Afet Harita
+// @host						apigo.afetharita.com
+// @BasePath					/
+// @schemes					    https http
+// @license.name				Apache License, Version 2.0 (the "License")
+// @license.url				    https://github.com/acikkaynak/deprem-yardim-backend-go/blob/main/LICENSE
+// @securityDefinitions.apiKey	ApiKeyAuth
+// @in							header
+// @name						X-Api-Key
 func main() {
 	repo := repository.New()
 	defer repo.Close()
-
-	needsHandler := handler.NewNeedsHandler(repo)
 
 	kafkaProducer, err := broker.NewProducer()
 	if err != nil {
@@ -63,14 +71,14 @@ func main() {
 	}
 
 	app := fiber.New()
+	app.Use(compress.New(compress.Config{
+		Level: compress.LevelBestCompression,
+	}))
 	app.Use(cors.New())
 	app.Use(recover.New())
 	app.Use(auth.New())
 	app.Use(pprof.New())
 	app.Use(cache.New())
-
-	app.Get("/needs", needsHandler.HandleList)
-	app.Post("/needs", needsHandler.HandleCreate)
 
 	application := &Application{app: app, repo: repo, kafkaProducer: kafkaProducer}
 	application.Register()

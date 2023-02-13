@@ -2,20 +2,23 @@ package handler
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/acikkaynak/backend-api-go/feeds"
 	"github.com/acikkaynak/backend-api-go/repository"
 	"github.com/gofiber/fiber/v2"
-	"net/http"
 )
 
-// updateFeedLocations godoc
-// @Summary            Update feed locations with correct address and location
-// @Tags               Feed
-// @Accept             json
-// @Produce            json
-// @Success            202
-// @Param              UpdateFeedLocationsRequest body feeds.UpdateFeedLocationsRequest true "RequestBody"
-// @Router             /feeds/areas [PATCH]
+// UpdateFeedLocationsHandler godoc
+//
+//	@Summary	Update feed locations with correct address and location
+//	@Tags		Feed
+//	@Accept		json
+//	@Produce	json
+//	@Success	202
+//	@Param		UpdateFeedLocationsRequest	body	feeds.UpdateFeedLocationsRequest	true	"RequestBody"
+//	@Security	ApiKeyAuth
+//	@Router		/feeds/areas [PATCH]
 func UpdateFeedLocationsHandler(repo *repository.Repository) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		var req feeds.UpdateFeedLocationsRequest

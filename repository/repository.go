@@ -8,14 +8,15 @@ import (
 	"strings"
 	"time"
 
+	sq "github.com/Masterminds/squirrel"
+	"github.com/acikkaynak/backend-api-go/feeds"
 	"github.com/acikkaynak/backend-api-go/needs"
 	"github.com/ggwhite/go-masker"
 	"github.com/jackc/pgx/v5"
-	"go.uber.org/zap"
-
-	sq "github.com/Masterminds/squirrel"
-	"github.com/acikkaynak/backend-api-go/feeds"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 var (
@@ -23,8 +24,17 @@ var (
 	feedsLocationTableName = "feeds_location"
 )
 
+type PgxIface interface {
+	Begin(context.Context) (pgx.Tx, error)
+	Query(context.Context, string, ...any) (pgx.Rows, error)
+	QueryRow(context.Context, string, ...any) pgx.Row
+	Exec(context.Context, string, ...any) (pgconn.CommandTag, error)
+	SendBatch(context.Context, *pgx.Batch) pgx.BatchResults
+	Close()
+}
+
 type Repository struct {
-	pool *pgxpool.Pool
+	pool PgxIface
 }
 
 type GetLocationsQuery struct {
@@ -53,14 +63,18 @@ func (tracer *myQueryTracer) TraceQueryEnd(ctx context.Context, conn *pgx.Conn, 
 
 func New() *Repository {
 	dbUrl := os.Getenv("DB_CONN_STR")
-
 	config, err := pgxpool.ParseConfig(dbUrl)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to parse config: %v\n", err)
 		os.Exit(1)
 	}
 
-	log, _ := zap.NewProduction()
+	logCfg := zap.NewProductionConfig()
+	logCfg.Level.SetLevel(zapcore.ErrorLevel)
+	log, err := logCfg.Build()
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	config.ConnConfig.Tracer = &myQueryTracer{
 		log: log.Sugar(),

@@ -3,6 +3,7 @@ module github.com/acikkaynak/backend-api-go
 go 1.19
 
 require (
+	github.com/Masterminds/squirrel v1.5.3
 	github.com/Shopify/sarama v1.38.1
 	github.com/arsmn/fiber-swagger/v2 v2.31.1
 	github.com/ggwhite/go-masker v1.0.9
@@ -11,6 +12,8 @@ require (
 	github.com/gofiber/fiber/v2 v2.42.0
 	github.com/google/uuid v1.3.0
 	github.com/jackc/pgx/v5 v5.2.0
+	github.com/lib/pq v1.10.7
+	github.com/pashagolub/pgxmock/v2 v2.4.0
 	github.com/prometheus/client_golang v1.14.0
 	github.com/stretchr/testify v1.8.1
 	github.com/swaggo/swag v1.8.10

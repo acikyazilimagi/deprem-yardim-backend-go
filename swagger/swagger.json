@@ -1,19 +1,29 @@
 {
     "schemes": [
-        "http",
-        "https"
+        "https",
+        "http"
     ],
     "swagger": "2.0",
     "info": {
-        "description": "Afet Harita API",
-        "title": "IT Afet Yardım",
+        "description": "This is a sample swagger for Afet Harita",
+        "title": "Afet Harita API",
         "contact": {},
+        "license": {
+            "name": "Apache License, Version 2.0 (the \"License\")",
+            "url": "https://github.com/acikkaynak/deprem-yardim-backend-go/blob/main/LICENSE"
+        },
         "version": "1.0"
     },
+    "host": "apigo.afetharita.com",
     "basePath": "/",
     "paths": {
         "/events": {
             "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -112,6 +122,11 @@
                 }
             },
             "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -178,7 +193,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Healthcheck"
+                    "HealthCheck"
                 ],
                 "summary": "Show the status of server.",
                 "responses": {
@@ -219,6 +234,11 @@
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -443,6 +463,13 @@
                     }
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "ApiKeyAuth": {
+            "type": "apiKey",
+            "name": "X-Api-Key",
+            "in": "header"
         }
     }
 }

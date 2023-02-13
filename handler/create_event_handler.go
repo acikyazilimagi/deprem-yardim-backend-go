@@ -23,14 +23,16 @@ type RawFeed struct {
 	Epoch           int64  `json:"epoch"`
 }
 
-// createEvent godoc
-// @Summary            Create Event areas with request body
-// @Tags               Event
-// @Accept             json
-// @Produce            json
-// @Success            200 {object} nil
-// @Param              body body request true "RequestBody"
-// @Router             /events [POST]
+// CreateEventHandler godoc
+//
+//	@Summary	Create Event areas with request body
+//	@Tags		Event
+//	@Accept		json
+//	@Produce	json
+//	@Success	200		{object}	nil
+//	@Param		body	body		request	true	"RequestBody"
+//	@Security	ApiKeyAuth
+//	@Router		/events [POST]
 func CreateEventHandler(producer sarama.SyncProducer) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		var req request

@@ -17,6 +17,7 @@ import (
 	swagger "github.com/arsmn/fiber-swagger/v2"
 	"github.com/gofiber/adaptor/v2"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/monitor"
 	"github.com/gofiber/fiber/v2/middleware/pprof"
@@ -63,6 +64,9 @@ func main() {
 	}
 
 	app := fiber.New()
+	app.Use(compress.New(compress.Config{
+		Level: compress.LevelBestCompression,
+	}))
 	app.Use(cors.New())
 	app.Use(recover.New())
 	app.Use(auth.New())

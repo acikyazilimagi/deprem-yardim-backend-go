@@ -40,22 +40,23 @@ var (
 
 // Message will be handled in ConsumeClaim method.
 func main() {
-
-	resp, err := http.Get(os.Getenv(AWS_TASK_METADATA_URL_ENV_VAR) + "/taskWithTags")
-	if err != nil {
-		fmt.Println("could not get task metadata info")
-	}
-
-	var respData map[string]string
-	if err := json.NewDecoder(resp.Body).Decode(&respData); err != nil {
-		fmt.Println("could not decode task metadata info")
-	} else {
-		splitted := strings.Split(respData["TaskARN"], "/")
-		if len(splitted) > 1 {
-			taskID = splitted[len(splitted)-1]
+	/*
+		resp, err := http.Get(os.Getenv(AWS_TASK_METADATA_URL_ENV_VAR) + "/taskWithTags")
+		if err != nil {
+			fmt.Println("could not get task metadata info")
 		}
-	}
 
+		var respData map[string]string
+		if err := json.NewDecoder(resp.Body).Decode(&respData); err != nil {
+			fmt.Println("could not decode task metadata info")
+		} else {
+			splitted := strings.Split(respData["TaskARN"], "/")
+			if len(splitted) > 1 {
+				taskID = splitted[len(splitted)-1]
+			}
+		}
+	*/
+	
 	http.HandleFunc("/healthcheck", func(writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(200)
 	})

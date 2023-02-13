@@ -62,7 +62,9 @@ func main() {
 		log.Println("failed to init kafka produder. err:", err)
 	}
 
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		StreamRequestBody: true,
+	})
 	app.Use(cors.New())
 	app.Use(recover.New())
 	app.Use(auth.New())

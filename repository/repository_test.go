@@ -11,12 +11,16 @@ import (
 
 func TestMask(t *testing.T) {
 	jsonMap := map[string]interface{}{
-		"name": "emre huseyin",
-		"tel":  "535 555 55 55",
+		"name":     "emre huseyin",
+		"tel":      "535 555 55 55",
+		"telefon2": "905555555555",
+		"telefon3": "0535 555 55 55",
 	}
 
 	assert.Equal(t, masker.Telephone(fmt.Sprintf("%v", jsonMap["tel"])), "(53)5555-****")
 	assert.Equal(t, masker.Telephone(fmt.Sprintf("%v", jsonMap["telefon"])), "<nil>")
+	assert.Equal(t, masker.Telephone(fmt.Sprintf("%v", jsonMap["telefon2"])), "(53)5555-****")
+	assert.Equal(t, masker.Telephone(fmt.Sprintf("%v", jsonMap["telefon3"])), "(53)5555-****")
 	assert.Equal(t, masker.Name(fmt.Sprintf("%v", jsonMap["name"])), "e**e h**eyin")
 }
 

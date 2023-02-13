@@ -8,16 +8,15 @@ import (
 )
 
 type Feed struct {
-	ID               int64      `json:"id,omitempty"`
-	FullText         string     `json:"full_text"`
-	IsResolved       bool       `json:"is_resolved"`
-	Channel          string     `json:"channel,omitempty"`
-	Timestamp        time.Time  `json:"timestamp,omitempty"`
-	Epoch            int64      `json:"epoch"`
-	ExtraParameters  *string    `json:"extra_parameters,omitempty"`
-	FormattedAddress string     `json:"formatted_address,omitempty"`
-	Reason           *string    `json:"reason,omitempty"`
-	Needs            []NeedItem `json:"needs,omitempty"`
+	ID               int64     `json:"id,omitempty"`
+	FullText         string    `json:"full_text"`
+	IsResolved       bool      `json:"is_resolved"`
+	Channel          string    `json:"channel,omitempty"`
+	Timestamp        time.Time `json:"timestamp,omitempty"`
+	Epoch            int64     `json:"epoch"`
+	ExtraParameters  *string   `json:"extra_parameters,omitempty"`
+	FormattedAddress string    `json:"formatted_address,omitempty"`
+	Reason           *string   `json:"reason,omitempty"`
 }
 
 type LatLng struct {

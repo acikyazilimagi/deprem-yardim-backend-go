@@ -10,7 +10,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/pprof"
 
 	"github.com/Shopify/sarama"
-	"github.com/acikkaynak/backend-api-go/app"
 	"github.com/acikkaynak/backend-api-go/broker"
 	"github.com/acikkaynak/backend-api-go/handler"
 	"github.com/acikkaynak/backend-api-go/middleware/auth"
@@ -63,8 +62,7 @@ func (a *Application) Register() {
 // @in							header
 // @name						X-Api-Key
 func main() {
-	pool := app.NewPoolConnection()
-	repo := repository.New(pool)
+	repo := repository.New()
 	defer repo.Close()
 
 	kafkaProducer, err := broker.NewProducer()

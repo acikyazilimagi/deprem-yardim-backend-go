@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
-	"github.com/acikkaynak/backend-api-go/app"
 	"github.com/acikkaynak/backend-api-go/broker"
 	"github.com/acikkaynak/backend-api-go/feeds"
 	"github.com/acikkaynak/backend-api-go/repository"
@@ -41,22 +40,6 @@ var (
 
 // Message will be handled in ConsumeClaim method.
 func main() {
-
-	resp, err := http.Get(os.Getenv(AWS_TASK_METADATA_URL_ENV_VAR) + "/taskWithTags")
-	if err != nil {
-		fmt.Println("could not get task metadata info")
-	}
-
-	var respData map[string]string
-	if err := json.NewDecoder(resp.Body).Decode(&respData); err != nil {
-		fmt.Println("could not decode task metadata info")
-	} else {
-		splitted := strings.Split(respData["TaskARN"], "/")
-		if len(splitted) > 1 {
-			taskID = splitted[len(splitted)-1]
-		}
-	}
-
 	http.HandleFunc("/healthcheck", func(writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(200)
 	})
@@ -132,12 +115,19 @@ func (consumer *Consumer) intentResolveHandle(message *sarama.ConsumerMessage, s
 		return
 	}
 
-	if err := consumer.repo.UpdateLocationIntent(ctx, messagePayload.FeedID, intents); err != nil {
-		fmt.Fprintf(os.Stderr, "error updating feed entry and location intent %#v error %s rawMessage %s", messagePayload, err.Error(), string(message.Value))
+	needs, err := sendNeedsResolveRequest(messagePayload.FullText, messagePayload.FeedID)
+	if err != nil {
+		session.MarkMessage(message, "")
+		session.Commit()
 		return
 	}
 
-	//TODO NEEDS
+	if err := consumer.repo.UpdateLocationIntentAndNeeds(ctx, messagePayload.FeedID, intents, needs); err != nil {
+		fmt.Fprintf(os.Stderr,
+			"error updating feed entry, location intent and needs %#v error %s rawMessage %s",
+			messagePayload, err.Error(), string(message.Value))
+		return
+	}
 
 	session.MarkMessage(message, "")
 	session.Commit()
@@ -185,6 +175,49 @@ func sendIntentResolveRequest(fullText string, feedID int64) (string, error) {
 	}
 
 	return strings.Join(intents, ","), nil
+}
+
+func sendNeedsResolveRequest(fullText string, feedID int64) ([]feeds.NeedItem, error) {
+	jsonBytes, err := json.Marshal(NeedsRequest{
+		Inputs: []string{fullText},
+	})
+
+	req, err := http.NewRequest("POST", os.Getenv("NEEDS_RESOLVER_API_URL"), bytes.NewReader(jsonBytes))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "could not prepare http request NeedsMessagePayload error message %s error %s", fullText, err.Error())
+		return nil, err
+	}
+
+	req.Header.Add("Authorization", "Bearer "+os.Getenv("NEEDS_RESOLVER_API_KEY"))
+	req.Header.Add("content-type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if resp.StatusCode != http.StatusOK {
+		fmt.Fprintf(os.Stderr, "could not get response NeedsMessagePayload feedID %d status %d", feedID, resp.StatusCode)
+		return nil, err
+	}
+
+	needsResp := &NeedsResponse{}
+	if err := json.NewDecoder(resp.Body).Decode(&needsResp); err != nil {
+		fmt.Fprintf(os.Stderr, "could not get decode response NeedsMessagePayload feedID %d err %s", feedID, err.Error())
+		return nil, err
+	}
+
+	needs := make([]feeds.NeedItem, 0)
+	if len(needsResp.Response) == 0 {
+		fmt.Fprintf(os.Stderr, "no data found on response NeedsMessagePayload feedID %d", feedID)
+		// ret empty
+		return needs, nil
+	}
+
+	for _, tag := range needsResp.Response[0].Processed.DetailedIntentTags {
+		needs = append(needs, feeds.NeedItem{
+			Label:  strings.ToLower(tag),
+			Status: true,
+		})
+	}
+
+	return needs, nil
 }
 
 func (consumer *Consumer) addressResolveHandle(message *sarama.ConsumerMessage, session sarama.ConsumerGroupSession) {
@@ -252,10 +285,9 @@ func NewConsumer() *Consumer {
 	if err != nil {
 		log.Panic("failed to init kafka producer. err:", err)
 	}
-	pool := app.NewPoolConnection()
 	return &Consumer{
 		ready:    make(chan bool),
-		repo:     repository.New(pool),
+		repo:     repository.New(),
 		producer: producer,
 	}
 }
@@ -327,4 +359,18 @@ type IntentResponse struct {
 type Intent []struct {
 	Label string  `json:"label"`
 	Score float64 `json:"score"`
+}
+
+type NeedsRequest struct {
+	Inputs []string `json:"inputs"`
+}
+
+type NeedsResponse struct {
+	Response []struct {
+		String    []string `json:"string"`
+		Processed struct {
+			Intent             []string `json:"intent"`
+			DetailedIntentTags []string `json:"detailed_intent_tags"`
+		} `json:"processed"`
+	} `json:"response"`
 }

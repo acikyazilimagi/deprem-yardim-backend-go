@@ -4,23 +4,24 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgconn"
-
-	"github.com/ggwhite/go-masker"
-	"github.com/lib/pq"
-
-	"github.com/acikkaynak/backend-api-go/needs"
-
 	sq "github.com/Masterminds/squirrel"
 	"github.com/acikkaynak/backend-api-go/feeds"
-	pgx "github.com/jackc/pgx/v5"
+	"github.com/acikkaynak/backend-api-go/needs"
+	"github.com/ggwhite/go-masker"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 var (
-	psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
+	psql                   = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
+	feedsLocationTableName = "feeds_location"
 )
 
 type PgxIface interface {
@@ -36,9 +37,60 @@ type Repository struct {
 	pool PgxIface
 }
 
-func New(p PgxIface) *Repository {
+type GetLocationsQuery struct {
+	SwLat, SwLng, NeLat, NeLng         float64
+	Timestamp                          int64
+	Reason, Channel                    string
+	ExtraParams                        bool
+	IsLocationVerified, IsNeedVerified string
+}
+
+type myQueryTracer struct {
+	log *zap.SugaredLogger
+}
+
+func (tracer *myQueryTracer) TraceQueryStart(
+	ctx context.Context,
+	_ *pgx.Conn,
+	data pgx.TraceQueryStartData) context.Context {
+	tracer.log.Infow("Executing command", "sql", data.SQL, "args", data.Args)
+
+	return ctx
+}
+
+func (tracer *myQueryTracer) TraceQueryEnd(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryEndData) {
+}
+
+func New() *Repository {
+	dbUrl := os.Getenv("DB_CONN_STR")
+	config, err := pgxpool.ParseConfig(dbUrl)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to parse config: %v\n", err)
+		os.Exit(1)
+	}
+
+	logCfg := zap.NewProductionConfig()
+	logCfg.Level.SetLevel(zapcore.ErrorLevel)
+	log, err := logCfg.Build()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	config.ConnConfig.Tracer = &myQueryTracer{
+		log: log.Sugar(),
+	}
+
+	pool, err := pgxpool.NewWithConfig(
+		context.Background(),
+		config,
+	)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		os.Exit(1)
+	}
+
 	return &Repository{
-		pool: p,
+		pool: pool,
 	}
 }
 
@@ -46,43 +98,62 @@ func (repo *Repository) Close() {
 	repo.pool.Close()
 }
 
-func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timestamp int64, reason, channel string, extraParams bool, isLocationVerified, isNeedVerified string) ([]feeds.Result, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
+func (repo *Repository) GetLocations(getLocationsQuery *GetLocationsQuery) ([]feeds.Result, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*25)
 	defer cancel()
 
 	selectBuilder := psql.
-		Select("id", "latitude", "longitude", "entry_id", "epoch", "reason", "channel", "is_location_verified", "is_need_verified").
-		From("feeds_location")
+		Select("id",
+			"latitude",
+			"longitude",
+			"entry_id",
+			"epoch",
+			"reason",
+			"channel",
+			"is_location_verified",
+			"is_need_verified",
+			"needs").
+		From(feedsLocationTableName)
 
-	if extraParams == true {
+	if getLocationsQuery.ExtraParams == true {
 		selectBuilder = selectBuilder.Column("extra_parameters")
 	}
 
-	if swLat != 0.0 || swLng != 0.0 || neLat != 0.0 || neLng != 0.0 {
-		selectBuilder = selectBuilder.Where(sq.GtOrEq{"southwest_lat": swLat, "southwest_lng": swLng}).
-			Where(sq.LtOrEq{"northeast_lat": neLat, "northeast_lng": neLng})
+	if getLocationsQuery.SwLat != 0.0 || getLocationsQuery.SwLng != 0.0 || getLocationsQuery.NeLat != 0.0 || getLocationsQuery.NeLng != 0.0 {
+		selectBuilder = selectBuilder.Where(sq.GtOrEq{"southwest_lat": getLocationsQuery.SwLat, "southwest_lng": getLocationsQuery.SwLng}).
+			Where(sq.LtOrEq{"northeast_lat": getLocationsQuery.NeLat, "northeast_lng": getLocationsQuery.NeLng})
 	}
 
-	if timestamp != 0 {
-		if channel != "ahbap_location" {
-			selectBuilder = selectBuilder.Where("epoch >= ?", timestamp)
+	if getLocationsQuery.Timestamp != 0 {
+		if getLocationsQuery.Channel != "ahbap_location" {
+			selectBuilder = selectBuilder.Where("epoch >= ?", getLocationsQuery.Timestamp)
 		}
 	}
 
-	if reason != "" {
-		selectBuilder = selectBuilder.Where("reason ILIKE ANY(?)", pq.Array(strings.Split(reason, ",")))
+	if getLocationsQuery.Reason != "" {
+		splitted := strings.Split(getLocationsQuery.Reason, ",")
+		splittedFormatted := make([]string, 0, len(splitted))
+		for _, s := range splitted {
+			splittedFormatted = append(splittedFormatted, "%"+s+"%")
+		}
+		selectBuilder = selectBuilder.Where("reason ILIKE ANY(?)", splittedFormatted)
 	}
 
-	if channel != "" {
-		selectBuilder = selectBuilder.Where("channel ILIKE ANY(?)", pq.Array(strings.Split(channel, ",")))
+	if getLocationsQuery.Channel != "" {
+		splitted := strings.Split(getLocationsQuery.Channel, ",")
+		splittedFormatted := make([]string, 0, len(splitted))
+		for _, s := range splitted {
+			splittedFormatted = append(splittedFormatted, "%"+s+"%")
+		}
+		selectBuilder = selectBuilder.Where("channel ILIKE ANY(?)", splittedFormatted)
 	}
 
-	if isLocationVerified != "" {
-		selectBuilder = selectBuilder.Where(sq.Eq{"is_location_verified": isLocationVerified})
+	if getLocationsQuery.IsLocationVerified != "" {
+		selectBuilder = selectBuilder.Where(sq.Eq{"is_location_verified": getLocationsQuery.IsLocationVerified})
 	}
 
-	if isNeedVerified != "" {
-		selectBuilder = selectBuilder.Where(sq.Eq{"is_need_verified": isNeedVerified})
+	if getLocationsQuery.IsNeedVerified != "" {
+		selectBuilder = selectBuilder.Where(sq.Eq{"is_need_verified": getLocationsQuery.IsNeedVerified})
 	}
 
 	newSql, args, err := selectBuilder.ToSql()
@@ -101,7 +172,7 @@ func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timesta
 		var result feeds.Result
 		result.Loc = make([]float64, 2)
 
-		if extraParams {
+		if getLocationsQuery.ExtraParams {
 			err := query.Scan(&result.ID,
 				&result.Loc[0],
 				&result.Loc[1],
@@ -111,7 +182,8 @@ func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timesta
 				&result.Channel,
 				&result.IsLocationVerified,
 				&result.IsNeedVerified,
-				&result.ExtraParameters)
+				&result.ExtraParameters,
+				&result.Needs)
 			if err != nil {
 				continue
 				// return nil, fmt.Errorf("could not scan locations: %w", err)
@@ -129,7 +201,8 @@ func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timesta
 				&result.Reason,
 				&result.Channel,
 				&result.IsLocationVerified,
-				&result.IsNeedVerified)
+				&result.IsNeedVerified,
+				&result.Needs)
 			if err != nil {
 				continue
 				// return nil, fmt.Errorf("could not scan locations: %w", err)
@@ -173,11 +246,12 @@ func (repo *Repository) GetFeed(id int64) (*feeds.Feed, error) {
 
 	row := repo.pool.QueryRow(ctx, fmt.Sprintf(
 		"SELECT fe.id, full_text, is_resolved, fe.channel, fe.timestamp, fe.extra_parameters, fl.formatted_address, fl.reason "+
-			"FROM feeds_entry fe, feeds_location fl "+
+			"FROM feeds_entry fe, "+feedsLocationTableName+" fl "+
 			"WHERE fe.id = fl.entry_id AND fe.id=%d", id))
 
 	var feed feeds.Feed
-	if err := row.Scan(&feed.ID, &feed.FullText, &feed.IsResolved, &feed.Channel, &feed.Timestamp, &feed.ExtraParameters, &feed.FormattedAddress, &feed.Reason); err != nil {
+	if err := row.Scan(&feed.ID, &feed.FullText, &feed.IsResolved, &feed.Channel, &feed.Timestamp,
+		&feed.ExtraParameters, &feed.FormattedAddress, &feed.Reason); err != nil {
 		return nil, fmt.Errorf("could not query feed with id : %w", err)
 	}
 
@@ -289,7 +363,7 @@ func (repo *Repository) createFeedEntry(ctx context.Context, tx pgx.Tx, feed fee
 }
 
 func (repo *Repository) createFeedLocation(ctx context.Context, tx pgx.Tx, location feeds.Location) (int64, error) {
-	q := `INSERT INTO feeds_location (
+	q := `INSERT INTO ` + feedsLocationTableName + `(
 			formatted_address, 
 			latitude, longitude, 
 			northeast_lat, northeast_lng, 
@@ -320,12 +394,12 @@ func (repo *Repository) createFeedLocation(ctx context.Context, tx pgx.Tx, locat
 	return id, nil
 }
 
-func (repo *Repository) UpdateLocationIntent(ctx context.Context, id int64, intents string) error {
-	q := "UPDATE feeds_location SET reason = $1 WHERE entry_id=$2;"
+func (repo *Repository) UpdateLocationIntentAndNeeds(ctx context.Context, id int64, intents string, needs []feeds.NeedItem) error {
+	q := "UPDATE " + feedsLocationTableName + " SET reason = $1, needs = $2 WHERE entry_id=$3;"
 
-	_, err := repo.pool.Exec(ctx, q, intents, id)
+	_, err := repo.pool.Exec(ctx, q, intents, needs, id)
 	if err != nil {
-		return fmt.Errorf("could not update feeds location intent: %w", err)
+		return fmt.Errorf("could not update feeds location intent and needs: %w", err)
 	}
 
 	return nil
@@ -334,7 +408,9 @@ func (repo *Repository) UpdateLocationIntent(ctx context.Context, id int64, inte
 func (repo *Repository) UpdateFeedLocations(ctx context.Context, locations []feeds.FeedLocation) error {
 	batch := &pgx.Batch{}
 	for _, location := range locations {
-		batch.Queue("UPDATE feeds_location SET is_verified = true, latitude = $1, longitude = $2, formatted_address = $3 WHERE entry_id = $4;", location.Latitude, location.Longitude, location.Address, location.EntryID)
+		batch.Queue(
+			"UPDATE "+feedsLocationTableName+" SET is_verified = true, latitude = $1, longitude = $2, formatted_address = $3 WHERE entry_id = $4;",
+			location.Latitude, location.Longitude, location.Address, location.EntryID)
 	}
 	_, err := repo.pool.SendBatch(ctx, batch).Exec()
 	return err

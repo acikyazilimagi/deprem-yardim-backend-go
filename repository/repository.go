@@ -342,7 +342,7 @@ func (repo *Repository) createFeedLocation(ctx context.Context, tx pgx.Tx, locat
 	return id, nil
 }
 
-func (repo *Repository) UpdateLocationIntentAndNeeds(ctx context.Context, id int64, intents string, needs string) error {
+func (repo *Repository) UpdateLocationIntentAndNeeds(ctx context.Context, id int64, intents string, needs []feeds.NeedItem) error {
 	q := "UPDATE feeds_location SET reason = $1, needs = $2 WHERE entry_id=$3;"
 
 	_, err := repo.pool.Exec(ctx, q, intents, needs, id)
@@ -356,7 +356,9 @@ func (repo *Repository) UpdateLocationIntentAndNeeds(ctx context.Context, id int
 func (repo *Repository) UpdateFeedLocations(ctx context.Context, locations []feeds.FeedLocation) error {
 	batch := &pgx.Batch{}
 	for _, location := range locations {
-		batch.Queue("UPDATE feeds_location SET is_verified = true, latitude = $1, longitude = $2, formatted_address = $3 WHERE entry_id = $4;", location.Latitude, location.Longitude, location.Address, location.EntryID)
+		batch.Queue(
+			"UPDATE feeds_location SET is_verified = true, latitude = $1, longitude = $2, formatted_address = $3 WHERE entry_id = $4;",
+			location.Latitude, location.Longitude, location.Address, location.EntryID)
 	}
 	_, err := repo.pool.SendBatch(ctx, batch).Exec()
 	return err

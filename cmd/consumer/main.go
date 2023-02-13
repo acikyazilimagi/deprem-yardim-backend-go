@@ -193,7 +193,7 @@ func sendIntentResolveRequest(fullText string, feedID int64) (string, error) {
 	return strings.Join(intents, ","), nil
 }
 
-func sendNeedsResolveRequest(fullText string, feedID int64) (string, error) {
+func sendNeedsResolveRequest(fullText string, feedID int64) ([]feeds.NeedItem, error) {
 	jsonBytes, err := json.Marshal(NeedsRequest{
 		Inputs: []string{fullText},
 	})
@@ -202,32 +202,39 @@ func sendNeedsResolveRequest(fullText string, feedID int64) (string, error) {
 	req, err := http.NewRequest("POST", os.Getenv("NEEDS_RESOLVER_API_URL"), bytes.NewReader(jsonBytes))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "could not prepare http request NeedsMessagePayload error message %s error %s", fullText, err.Error())
-		return "", err
+		return nil, err
 	}
 
-	// todo(bugthesystem): needs API needs to have a secure access
 	req.Header.Add("Authorization", "Bearer "+os.Getenv("NEEDS_RESOLVER_API_KEY"))
 	req.Header.Add("content-type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if resp.StatusCode != http.StatusOK {
 		fmt.Fprintf(os.Stderr, "could not get response NeedsMessagePayload feedID %d status %d", feedID, resp.StatusCode)
-		return "", err
+		return nil, err
 	}
 
 	needsResp := &NeedsResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(&needsResp); err != nil {
 		fmt.Fprintf(os.Stderr, "could not get decode response NeedsMessagePayload feedID %d err %s", feedID, err.Error())
-		return "", err
+		return nil, err
 	}
 
+	needs := make([]feeds.NeedItem, 0)
 	if len(needsResp.Response) == 0 {
 		fmt.Fprintf(os.Stderr, "no data found on response NeedsMessagePayload feedID %d", feedID)
-		return "", nil
+		// ret empty
+		return needs, nil
 	}
 
-	// todo(bugthesystem): handle response with an empty Processed
-	return strings.Join(needsResp.Response[0].Processed.DetailedIntentTags, ","), nil
+	for _, tag := range needsResp.Response[0].Processed.DetailedIntentTags {
+		needs = append(needs, feeds.NeedItem{
+			Label:  strings.ToLower(tag),
+			Status: true,
+		})
+	}
+
+	return needs, nil
 }
 
 func (consumer *Consumer) addressResolveHandle(message *sarama.ConsumerMessage, session sarama.ConsumerGroupSession) {

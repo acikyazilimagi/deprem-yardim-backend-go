@@ -276,7 +276,6 @@ func (consumer *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, clai
 	for {
 		select {
 		case message := <-claim.Messages():
-			log.Printf("Message claimed: value = %s, timestamp = %v, topic = %s", string(message.Value), message.Timestamp, message.Topic)
 			clientCounter.With(prometheus.Labels{
 				"topic":     message.Topic,
 				"timestamp": fmt.Sprintf("%d", message.Timestamp.Unix()),

@@ -319,6 +319,12 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "is_location_verified": {
+                    "type": "boolean"
+                },
+                "is_need_verified": {
+                    "type": "boolean"
+                },
                 "loc": {
                     "type": "array",
                     "items": {

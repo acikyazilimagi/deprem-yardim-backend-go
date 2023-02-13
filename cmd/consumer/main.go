@@ -140,7 +140,7 @@ func (consumer *Consumer) intentResolveHandle(message *sarama.ConsumerMessage, s
 
 	if err := consumer.repo.UpdateLocationIntentAndNeeds(ctx, messagePayload.FeedID, intents, needs); err != nil {
 		fmt.Fprintf(os.Stderr,
-			"error updating feed entry and location intent %#v error %s rawMessage %s",
+			"error updating feed entry, location intent and needs %#v error %s rawMessage %s",
 			messagePayload, err.Error(), string(message.Value))
 		return
 	}

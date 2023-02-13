@@ -9,27 +9,18 @@ import (
 	"time"
 
 	"github.com/ggwhite/go-masker"
-
 	"github.com/jackc/pgx/v5"
+	"github.com/lib/pq"
 
 	"github.com/acikkaynak/backend-api-go/needs"
 
+	sq "github.com/Masterminds/squirrel"
 	"github.com/acikkaynak/backend-api-go/feeds"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var (
-	getLocationsQuery = "SELECT " +
-		"id, " +
-		"latitude, " +
-		"longitude, " +
-		"entry_id, " +
-		"epoch, " +
-		"reason, " +
-		"channel, " +
-		"is_location_verified, " +
-		"is_need_verified " +
-		"needs"
+	psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 )
 
 type Repository struct {
@@ -57,59 +48,48 @@ func (repo *Repository) GetLocations(swLat, swLng, neLat, neLng float64, timesta
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
 
-	q := getLocationsQuery
+  // todo(bugthesystem): should be updated to query "needs" JSOB Blob as I explained in the PR comment
+	selectBuilder := psql.
+		Select("id", "latitude", "longitude", "entry_id", "epoch", "reason", "channel", "is_location_verified", "is_need_verified").
+		From("feeds_location")
 
 	if extraParams == true {
-		q = fmt.Sprintf("%s ,extra_parameters ", q)
+		selectBuilder = selectBuilder.Column("extra_parameters")
 	}
 
-	q = fmt.Sprintf("%s FROM feeds_location where ", q)
-
-	whereConditions := make([]string, 0)
-
 	if swLat != 0.0 || swLng != 0.0 || neLat != 0.0 || neLng != 0.0 {
-		whereConditions = append(whereConditions, fmt.Sprintf(" %s",
-			fmt.Sprintf(" southwest_lat >= %f "+
-				"and southwest_lng >= %f "+
-				"and northeast_lat <= %f "+
-				"and northeast_lng <= %f ", swLat, swLng, neLat, neLng)))
+		selectBuilder = selectBuilder.Where(sq.GtOrEq{"southwest_lat": swLat, "southwest_lng": swLng}).
+			Where(sq.LtOrEq{"northeast_lat": neLat, "northeast_lng": neLng})
 	}
 
 	if timestamp != 0 {
 		if channel != "ahbap_location" {
-			whereConditions = append(whereConditions, fmt.Sprintf(" epoch >= %d ", timestamp))
+			selectBuilder = selectBuilder.Where("epoch >= ?", timestamp)
 		}
 	}
 
 	if reason != "" {
-		var reasonArr []string
-		for _, r := range strings.Split(reason, ",") {
-			reasonArr = append(reasonArr, fmt.Sprintf("'%s'", "%"+r+"%"))
-		}
-		reasons := strings.Join(reasonArr, ",")
-		whereConditions = append(whereConditions, fmt.Sprintf(" reason ILIKE ANY(array[%s]) ", reasons))
+		selectBuilder = selectBuilder.Where("reason ILIKE ANY(?)", pq.Array(strings.Split(reason, ",")))
 	}
 
 	if channel != "" {
-		//whereConditions = append(whereConditions, fmt.Sprintf(" channel = '%s' ", channel))
-		var channelArr []string
-		for _, r := range strings.Split(channel, ",") {
-			channelArr = append(channelArr, fmt.Sprintf("'%s'", "%"+r+"%"))
-		}
-		channels := strings.Join(channelArr, ",")
-		whereConditions = append(whereConditions, fmt.Sprintf(" channel ILIKE ANY(array[%s]) ", channels))
+		selectBuilder = selectBuilder.Where("channel ILIKE ANY(?)", pq.Array(strings.Split(channel, ",")))
 	}
 
 	if isLocationVerified != "" {
-		whereConditions = append(whereConditions, fmt.Sprintf(" is_location_verified = %s ", isLocationVerified))
+		selectBuilder = selectBuilder.Where(sq.Eq{"is_location_verified": isLocationVerified})
 	}
 
 	if isNeedVerified != "" {
-		whereConditions = append(whereConditions, fmt.Sprintf(" is_need_verified = %s ", isNeedVerified))
+		selectBuilder = selectBuilder.Where(sq.Eq{"is_need_verified": isNeedVerified})
 	}
-	q = fmt.Sprintf("%s %s", q, strings.Join(whereConditions, " and "))
 
-	query, err := repo.pool.Query(ctx, q)
+	newSql, args, err := selectBuilder.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("could not format query : %w", err)
+	}
+
+	query, err := repo.pool.Query(ctx, newSql, args...)
 	if err != nil {
 		return nil, fmt.Errorf("could not query locations: %w", err)
 	}

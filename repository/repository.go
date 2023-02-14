@@ -182,8 +182,9 @@ func (repo *Repository) GetLocations(getLocationsQuery *GetLocationsQuery) ([]fe
 				&result.Channel,
 				&result.IsLocationVerified,
 				&result.IsNeedVerified,
+				&result.Needs,
 				&result.ExtraParameters,
-				&result.Needs)
+			)
 			if err != nil {
 				continue
 				// return nil, fmt.Errorf("could not scan locations: %w", err)

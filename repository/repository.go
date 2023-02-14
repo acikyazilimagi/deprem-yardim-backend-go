@@ -11,12 +11,12 @@ import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/acikkaynak/backend-api-go/feeds"
 	"github.com/acikkaynak/backend-api-go/needs"
+	log "github.com/acikkaynak/backend-api-go/pkg/logger"
 	"github.com/ggwhite/go-masker"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 var (
@@ -69,15 +69,8 @@ func New() *Repository {
 		os.Exit(1)
 	}
 
-	logCfg := zap.NewProductionConfig()
-	logCfg.Level.SetLevel(zapcore.ErrorLevel)
-	log, err := logCfg.Build()
-	if err != nil {
-		fmt.Println(err)
-	}
-
 	config.ConnConfig.Tracer = &myQueryTracer{
-		log: log.Sugar(),
+		log: log.Logger().Sugar(),
 	}
 
 	pool, err := pgxpool.NewWithConfig(
@@ -155,6 +148,8 @@ func (repo *Repository) GetLocations(getLocationsQuery *GetLocationsQuery) ([]fe
 	if getLocationsQuery.IsNeedVerified != "" {
 		selectBuilder = selectBuilder.Where(sq.Eq{"is_need_verified": getLocationsQuery.IsNeedVerified})
 	}
+
+	selectBuilder = selectBuilder.Where(sq.Eq{"is_deleted": false})
 
 	newSql, args, err := selectBuilder.ToSql()
 	if err != nil {
@@ -396,10 +391,16 @@ func (repo *Repository) createFeedLocation(ctx context.Context, tx pgx.Tx, locat
 }
 
 func (repo *Repository) UpdateLocationIntentAndNeeds(ctx context.Context, id int64, intents string, needs []feeds.NeedItem) error {
-	q := "UPDATE " + feedsLocationTableName + " SET reason = $1, needs = $2 WHERE entry_id=$3;"
+	updateBuilder := psql.Update(feedsLocationTableName).
+		Set("reason", intents).
+		Set("needs", needs).Where(sq.Eq{"entry_id": id})
 
-	_, err := repo.pool.Exec(ctx, q, intents, needs, id)
+	rawSql, args, err := updateBuilder.ToSql()
 	if err != nil {
+		return fmt.Errorf("could not prepare sql: %w", err)
+	}
+
+	if _, err := repo.pool.Exec(ctx, rawSql, args...); err != nil {
 		return fmt.Errorf("could not update feeds location intent and needs: %w", err)
 	}
 

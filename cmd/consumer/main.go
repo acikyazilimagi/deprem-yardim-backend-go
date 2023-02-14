@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/acikkaynak/backend-api-go/search"
 	"log"
 	"net/http"
 	"os"
@@ -248,7 +249,13 @@ func (consumer *Consumer) addressResolveHandle(message *sarama.ConsumerMessage, 
 
 	err, entryID := consumer.repo.CreateFeed(ctx, f, messagePayload.Location)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error inserting feed entry and location message %#v error %s rawMessage %s", messagePayload, err.Error(), string(message.Value))
+		fmt.Fprintf(os.Stderr, "error inserting feed entry and location message to db %#v error %s rawMessage %s", messagePayload, err.Error(), string(message.Value))
+		return
+	}
+
+	err = consumer.index.CreateFeedLocation(ctx, f, messagePayload.Location)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error inserting feed entry and location message to search %#v error %s rawMessage %s", messagePayload, err.Error(), string(message.Value))
 		return
 	}
 
@@ -277,6 +284,7 @@ func (consumer *Consumer) addressResolveHandle(message *sarama.ConsumerMessage, 
 type Consumer struct {
 	ready    chan bool
 	repo     *repository.Repository
+	index    *search.LocationIndex
 	producer sarama.SyncProducer
 }
 
@@ -288,6 +296,7 @@ func NewConsumer() *Consumer {
 	return &Consumer{
 		ready:    make(chan bool),
 		repo:     repository.New(),
+		index:    search.NewLocationIndex(),
 		producer: producer,
 	}
 }

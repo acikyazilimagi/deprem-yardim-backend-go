@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"github.com/acikkaynak/backend-api-go/search"
 	"strconv"
 	"time"
 
@@ -23,7 +24,7 @@ import (
 //	@Param		reason		query		string	false	"Reason",
 //	@Param		channel		query		string	false	"Channel"
 //	@Router		/feeds/areas [GET]
-func GetFeedAreas(repo *repository.Repository) fiber.Handler {
+func GetFeedAreas(repo *repository.Repository, index *search.LocationIndex) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		swLatStr := ctx.Query("sw_lat")
 		swLngStr := ctx.Query("sw_lng")
@@ -68,13 +69,13 @@ func GetFeedAreas(repo *repository.Repository) fiber.Handler {
 			IsNeedVerified:     isNeedVerified,
 		}
 
-		data, err := repo.GetLocations(getLocationsQuery)
+		data, count, err := index.GetLocations(getLocationsQuery)
 		if err != nil {
 			return ctx.JSON(err)
 		}
 
 		resp := &feeds.Response{
-			Count:   len(data),
+			Count:   count,
 			Results: data,
 		}
 

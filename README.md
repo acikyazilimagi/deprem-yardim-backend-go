@@ -16,6 +16,49 @@ geçilirse son 1 yıla ait kayıtlar döner.
 **Örnek
 Request** : `/feeds/areas?ne_lat=37.62633260711298&ne_lng=36.97311401367188&sw_lat=37.558254797440675&sw_lng=36.82479858398438&time_stamp=1675807028`
 
+### /events
+Ham verinin sisteme alındığı endpoint.
+
+HTTP Method: POST 
+
+Required HEADERS: Authorization (x-api-key)
+
+Internal uygulamalar istek atarken os environment üzerinden BACKEND_GO_API_KEY değerini okuyup **x-api-key** headerına koymalı.
+
+**API URL:** Os environment üzerinden BACKEND_GO_API_URL
+
+```json
+{
+  "feeds":[
+    {
+      "raw_text":"<string>",
+      "channel":"<string>",
+      "extra_parameters":"<string> (field string fakat içerisindeki veri json)",
+      "epoch":"<int64> (unix epoch)"
+    }
+  ]
+}
+```
+
+### /reasons
+HTTP Method: GET
+
+Sistemde yer alan reasonları döner.
+
+```json
+{
+  "reasons":[
+    "barınma",
+    "battaniye",
+    "ekip",
+    "elektrik",
+    "elektronik",
+    "enkaz",
+    "erzak"
+  ]
+}
+```
+
 ### /feeds/:id
 
 **Path variable**: `id (int64)`

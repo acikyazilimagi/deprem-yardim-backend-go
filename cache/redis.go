@@ -2,10 +2,10 @@ package cache
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"time"
 
+	log "github.com/acikkaynak/backend-api-go/pkg/logger"
 	"github.com/go-redis/redis"
 )
 
@@ -27,7 +27,7 @@ func (repository *RedisRepository) SetKey(key string, value interface{}, ttl tim
 	status := repository.client.Set(key, value, ttl)
 	_, err := status.Result()
 	if err != nil {
-		fmt.Println(err)
+		log.Logger().Sugar().Infoln(err)
 	}
 }
 
@@ -41,7 +41,7 @@ func (repository *RedisRepository) Get(key string) interface{} {
 
 	var data interface{}
 	if err = json.Unmarshal([]byte(stringResult), &data); err != nil {
-		fmt.Println(err)
+		log.Logger().Sugar().Infoln(err)
 		return nil
 	}
 

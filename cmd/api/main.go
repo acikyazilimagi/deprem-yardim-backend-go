@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -14,6 +13,7 @@ import (
 	"github.com/acikkaynak/backend-api-go/handler"
 	"github.com/acikkaynak/backend-api-go/middleware/auth"
 	"github.com/acikkaynak/backend-api-go/middleware/cache"
+	log "github.com/acikkaynak/backend-api-go/pkg/logger"
 	"github.com/acikkaynak/backend-api-go/repository"
 	_ "github.com/acikkaynak/backend-api-go/swagger"
 	swagger "github.com/arsmn/fiber-swagger/v2"
@@ -67,7 +67,7 @@ func main() {
 
 	kafkaProducer, err := broker.NewProducer()
 	if err != nil {
-		log.Println("failed to init kafka produder. err:", err)
+		log.Logger().Info("failed to init kafka produder. err: " + err.Error())
 	}
 
 	app := fiber.New()
@@ -89,11 +89,11 @@ func main() {
 
 	go func() {
 		_ = <-c
-		fmt.Println("application gracefully shutting down..")
+		log.Logger().Info("application gracefully shutting down..")
 		_ = app.Shutdown()
 	}()
 
 	if err := app.Listen(":80"); err != nil {
-		panic(fmt.Sprintf("app error: %s", err.Error()))
+		log.Logger().Panic(fmt.Sprintf("app error: %s", err.Error()))
 	}
 }

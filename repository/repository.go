@@ -407,6 +407,15 @@ func (repo *Repository) UpdateLocationIntentAndNeeds(ctx context.Context, id int
 	return nil
 }
 
+func (repo *Repository) DeleteFeedLocation(ctx context.Context, entryID int64) error {
+	sql, args, err := sq.Update(feedsLocationTableName).Where(sq.Eq{"entry_id": entryID}).Set("is_deleted", true).ToSql()
+	if err != nil {
+		return fmt.Errorf("could not prepare soft delete query: %w", err)
+	}
+	_, err = repo.pool.Exec(ctx, sql, args...)
+	return err
+}
+
 func (repo *Repository) UpdateFeedLocations(ctx context.Context, locations []feeds.FeedLocation) error {
 	batch := &pgx.Batch{}
 	for _, location := range locations {

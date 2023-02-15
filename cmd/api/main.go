@@ -94,6 +94,6 @@ func main() {
 	}()
 
 	if err := app.Listen(":80"); err != nil {
-		panic(fmt.Sprintf("app error: %s", err.Error()))
+		log.Logger().Panic(fmt.Sprintf("app error: %s", err.Error()))
 	}
 }

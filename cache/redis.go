@@ -27,7 +27,7 @@ func (repository *RedisRepository) SetKey(key string, value interface{}, ttl tim
 	status := repository.client.Set(key, value, ttl)
 	_, err := status.Result()
 	if err != nil {
-		log.Logger().Sugar().Infoln(err)
+		log.Logger().Info(err.Error())
 	}
 }
 
@@ -41,7 +41,7 @@ func (repository *RedisRepository) Get(key string) interface{} {
 
 	var data interface{}
 	if err = json.Unmarshal([]byte(stringResult), &data); err != nil {
-		log.Logger().Sugar().Infoln(err)
+		log.Logger().Info(err.Error())
 		return nil
 	}
 

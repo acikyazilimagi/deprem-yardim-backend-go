@@ -67,7 +67,7 @@ func main() {
 
 	kafkaProducer, err := broker.NewProducer()
 	if err != nil {
-		log.Logger().Sugar().Infoln("failed to init kafka produder. err:", err)
+		log.Logger().Info("failed to init kafka produder. err: " + err.Error())
 	}
 
 	app := fiber.New()
@@ -89,7 +89,7 @@ func main() {
 
 	go func() {
 		_ = <-c
-		log.Logger().Sugar().Infoln("application gracefully shutting down..")
+		log.Logger().Info("application gracefully shutting down..")
 		_ = app.Shutdown()
 	}()
 

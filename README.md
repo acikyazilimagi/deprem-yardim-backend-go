@@ -1,4 +1,10 @@
-# deprem-yardim-backend-go
+# Afetharita API
+
+### Pre-commit hooklarının çalışması için, pre-commit kurulmalıdır.
+
+```sh
+brew install pre-commit
+```
 
 # Proje Mimarisi
 

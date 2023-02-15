@@ -8,7 +8,7 @@ brew install pre-commit
 
 # Proje Mimarisi
 
-![architecture](/docs/architecture.jpeg)
+![architecture](/docs/afet-mimari-guncel.svg)
 
 # Endpointler
 

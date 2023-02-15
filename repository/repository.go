@@ -53,7 +53,7 @@ func (tracer *myQueryTracer) TraceQueryStart(
 	ctx context.Context,
 	_ *pgx.Conn,
 	data pgx.TraceQueryStartData) context.Context {
-	tracer.log.Infow("Executing command", "sql", data.SQL, "args", data.Args)
+	tracer.log.Debugw("Executing command", "sql", data.SQL, "args", data.Args)
 
 	return ctx
 }

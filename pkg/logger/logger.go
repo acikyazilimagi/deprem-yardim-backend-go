@@ -13,9 +13,9 @@ var logger *zap.Logger
 
 func init() {
 	encoderConfig := zap.NewProductionConfig()
-	encoderConfig.Level.SetLevel(zapcore.ErrorLevel)
+	encoderConfig.Level.SetLevel(zapcore.InfoLevel)
 	if os.Getenv("env") == "local" {
-		encoderConfig.Level.SetLevel(zapcore.InfoLevel)
+		encoderConfig.Level.SetLevel(zapcore.DebugLevel)
 	}
 	encoderConfig.EncoderConfig.TimeKey = "timestamp"
 	encoderConfig.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout(time.RFC3339Nano)

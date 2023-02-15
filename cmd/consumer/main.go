@@ -1,20 +1,15 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
-	"time"
 
 	"github.com/Shopify/sarama"
 	"github.com/acikkaynak/backend-api-go/broker"
-	"github.com/acikkaynak/backend-api-go/feeds"
 	"github.com/acikkaynak/backend-api-go/pkg/logger"
 	"github.com/acikkaynak/backend-api-go/repository"
 	"github.com/prometheus/client_golang/prometheus"
@@ -98,188 +93,6 @@ func main() {
 	}
 }
 
-func (consumer *Consumer) intentResolveHandle(message *sarama.ConsumerMessage, session sarama.ConsumerGroupSession) {
-	var messagePayload IntentMessagePayload
-	if err := json.Unmarshal(message.Value, &messagePayload); err != nil {
-		log.Logger().Error("deserialization IntentMessagePayload error", zap.String("message", string(message.Value)), zap.Error(err))
-		session.MarkMessage(message, "")
-		session.Commit()
-		return
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	intents, err := sendIntentResolveRequest(messagePayload.FullText, messagePayload.FeedID)
-	if err != nil {
-		if err.Error() == "alakasiz veri" {
-			if err := consumer.repo.DeleteFeedLocation(ctx, messagePayload.FeedID); err != nil {
-				log.Logger().Error("", zap.Error(err))
-			}
-		}
-		log.Logger().Error("", zap.Error(err))
-		session.MarkMessage(message, "")
-		session.Commit()
-		return
-	}
-
-	needs, err := sendNeedsResolveRequest(messagePayload.FullText, messagePayload.FeedID)
-	if err != nil {
-		session.MarkMessage(message, "")
-		session.Commit()
-		return
-	}
-
-	if err := consumer.repo.UpdateLocationIntentAndNeeds(ctx, messagePayload.FeedID, intents, needs); err != nil {
-		fmt.Fprintf(os.Stderr,
-			"error updating feed entry, location intent and needs %#v error %s rawMessage %s",
-			messagePayload, err.Error(), string(message.Value))
-		return
-	}
-
-	session.MarkMessage(message, "")
-	session.Commit()
-}
-
-func sendIntentResolveRequest(fullText string, feedID int64) (string, error) {
-	jsonBytes, err := json.Marshal(IntentRequest{
-		Inputs: fullText,
-	})
-	fmt.Println(os.Getenv("INTENT_RESOLVER_API_URL"))
-
-	req, err := http.NewRequest("POST", os.Getenv("INTENT_RESOLVER_API_URL"), bytes.NewReader(jsonBytes))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "could not prepare http request IntentMessagePayload error message %s error %s", fullText, err.Error())
-		return "", err
-	}
-	req.Header.Add("Authorization", "Bearer "+os.Getenv("INTENT_RESOLVER_API_KEY"))
-	req.Header.Add("content-type", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if resp.StatusCode != http.StatusOK {
-		fmt.Fprintf(os.Stderr, "could not get response IntentMessagePayload feedID %d status %d", feedID, resp.StatusCode)
-		return "", err
-	}
-
-	intentResp := &IntentResponse{}
-	if err := json.NewDecoder(resp.Body).Decode(&intentResp.Results); err != nil {
-		fmt.Fprintf(os.Stderr, "could not get decode response IntentMessagePayload feedID %d err %s", feedID, err.Error())
-		return "", err
-	}
-
-	if len(intentResp.Results) == 0 {
-		fmt.Fprintf(os.Stderr, "no data found on response IntentMessagePayload feedID %d", feedID)
-		return "", nil
-	}
-
-	intents := make([]string, 0)
-	for _, val := range intentResp.Results[0] {
-		if val.Score >= 0.4 {
-			if val.Label == "Alakasiz" && val.Score >= 0.7 {
-				return "", fmt.Errorf("alakasiz veri")
-			}
-			intents = append(intents, strings.ToLower(val.Label))
-		}
-	}
-
-	return strings.Join(intents, ","), nil
-}
-
-func sendNeedsResolveRequest(fullText string, feedID int64) ([]feeds.NeedItem, error) {
-	jsonBytes, err := json.Marshal(NeedsRequest{
-		Inputs: []string{fullText},
-	})
-
-	req, err := http.NewRequest("POST", os.Getenv("NEEDS_RESOLVER_API_URL"), bytes.NewReader(jsonBytes))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "could not prepare http request NeedsMessagePayload error message %s error %s", fullText, err.Error())
-		return nil, err
-	}
-
-	req.Header.Add("Authorization", "Bearer "+os.Getenv("NEEDS_RESOLVER_API_KEY"))
-	req.Header.Add("content-type", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if resp.StatusCode != http.StatusOK {
-		fmt.Fprintf(os.Stderr, "could not get response NeedsMessagePayload feedID %d status %d", feedID, resp.StatusCode)
-		return nil, err
-	}
-
-	needsResp := &NeedsResponse{}
-	if err := json.NewDecoder(resp.Body).Decode(&needsResp); err != nil {
-		fmt.Fprintf(os.Stderr, "could not get decode response NeedsMessagePayload feedID %d err %s", feedID, err.Error())
-		return nil, err
-	}
-
-	needs := make([]feeds.NeedItem, 0)
-	if len(needsResp.Response) == 0 {
-		fmt.Fprintf(os.Stderr, "no data found on response NeedsMessagePayload feedID %d", feedID)
-		// ret empty
-		return needs, nil
-	}
-
-	for _, tag := range needsResp.Response[0].Processed.DetailedIntentTags {
-		needs = append(needs, feeds.NeedItem{
-			Label:  strings.ToLower(tag),
-			Status: true,
-		})
-	}
-
-	return needs, nil
-}
-
-func (consumer *Consumer) addressResolveHandle(message *sarama.ConsumerMessage, session sarama.ConsumerGroupSession) {
-	var messagePayload ConsumeMessagePayload
-	if err := json.Unmarshal(message.Value, &messagePayload); err != nil {
-		fmt.Fprintf(os.Stderr, "deserialization error message %s error %s", string(message.Value), err.Error())
-		session.MarkMessage(message, "")
-		session.Commit()
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	messagePayload.Feed.Timestamp = time.Now()
-
-	f := feeds.Feed{
-		ID:               messagePayload.Feed.ID,
-		FullText:         messagePayload.Feed.FullText,
-		IsResolved:       messagePayload.Feed.IsResolved,
-		Channel:          messagePayload.Feed.Channel,
-		Timestamp:        messagePayload.Feed.Timestamp,
-		Epoch:            messagePayload.Feed.Epoch,
-		ExtraParameters:  messagePayload.Feed.ExtraParameters,
-		FormattedAddress: messagePayload.Feed.FormattedAddress,
-		Reason:           messagePayload.Feed.Reason,
-	}
-
-	err, entryID := consumer.repo.CreateFeed(ctx, f, messagePayload.Location)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error inserting feed entry and location message %#v error %s rawMessage %s", messagePayload, err.Error(), string(message.Value))
-		return
-	}
-
-	intentPayloadByte, err := json.Marshal(IntentMessagePayload{
-		FeedID:   entryID,
-		FullText: messagePayload.Feed.FullText,
-	})
-
-	_, _, err = consumer.producer.SendMessage(&sarama.ProducerMessage{
-		Topic: intentResolvedTopicName,
-		Key:   sarama.StringEncoder(fmt.Sprintf("%d", entryID)),
-		Value: sarama.ByteEncoder(intentPayloadByte),
-	})
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error producing intent feedID %d error %s", messagePayload.Feed.ID, err.Error())
-		session.MarkMessage(message, "")
-		session.Commit()
-		return
-	}
-
-	session.MarkMessage(message, "")
-	session.Commit()
-}
-
 // Consumer represents a Sarama consumer group consumer
 type Consumer struct {
 	ready    chan bool
@@ -333,51 +146,12 @@ func (consumer *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, clai
 	}
 }
 
-type FeedMessage struct {
-	ID               int64     `json:"id,omitempty"`
-	FullText         string    `json:"raw_text"`
-	IsResolved       bool      `json:"is_resolved"`
-	Channel          string    `json:"channel,omitempty"`
-	Timestamp        time.Time `json:"timestamp,omitempty"`
-	Epoch            int64     `json:"epoch"`
-	ExtraParameters  *string   `json:"extra_parameters,omitempty"`
-	FormattedAddress string    `json:"formatted_address,omitempty"`
-	Reason           *string   `json:"reason,omitempty"`
+type DuplicationRequest struct {
+	Address string   `json:"address"`
+	Intents []string `json:"reasons"`
+	Needs   []string `json:"needs"`
 }
 
-type ConsumeMessagePayload struct {
-	Location feeds.Location `json:"location"`
-	Feed     FeedMessage    `json:"feed"`
-}
-
-type IntentMessagePayload struct {
-	FeedID   int64  `json:"id"`
-	FullText string `json:"full_text"`
-}
-
-type IntentRequest struct {
-	Inputs string `json:"inputs"`
-}
-
-type IntentResponse struct {
-	Results []Intent
-}
-
-type Intent []struct {
-	Label string  `json:"label"`
-	Score float64 `json:"score"`
-}
-
-type NeedsRequest struct {
-	Inputs []string `json:"inputs"`
-}
-
-type NeedsResponse struct {
-	Response []struct {
-		String    []string `json:"string"`
-		Processed struct {
-			Intent             []string `json:"intent"`
-			DetailedIntentTags []string `json:"detailed_intent_tags"`
-		} `json:"processed"`
-	} `json:"response"`
+type DuplicationResponse struct {
+	IsDuplicate bool `json:"is_duplicate"`
 }

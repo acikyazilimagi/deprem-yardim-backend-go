@@ -177,8 +177,15 @@ func (l *LocationIndex) CreateFeedLocation(ctx context.Context, fullText string,
 		},
 	}
 
-	reason := strings.Split(*location.Reason, ",")
-	channel := strings.Split(*location.Channel, ",")
+	var reason []string
+	if location.Reason != nil {
+		reason = strings.Split(*location.Reason, ",")
+	}
+
+	var channel []string
+	if location.Channel != nil {
+		channel = strings.Split(*location.Channel, ",")
+	}
 
 	item := Item[Location]{
 		Index: l.indexName,

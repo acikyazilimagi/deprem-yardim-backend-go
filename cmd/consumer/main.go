@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/acikkaynak/backend-api-go/search"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -17,10 +16,12 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/acikkaynak/backend-api-go/broker"
 	"github.com/acikkaynak/backend-api-go/feeds"
+	"github.com/acikkaynak/backend-api-go/pkg/logger"
 	"github.com/acikkaynak/backend-api-go/repository"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.uber.org/zap"
 )
 
 const (
@@ -55,7 +56,7 @@ func main() {
 
 	client, err := broker.NewConsumerGroup(consumerGroupName)
 	if err != nil {
-		log.Panic(err.Error())
+		log.Logger().Panic(err.Error())
 		return
 	}
 
@@ -66,7 +67,7 @@ func main() {
 	go func() {
 		for {
 			if err := client.Consume(ctx, []string{intentResolvedTopicName, addressResolvedTopicName}, consumer); err != nil {
-				log.Panicf("Error from consumer: %v", err)
+				log.Logger().Panic("Error from consumer:", zap.Error(err))
 			}
 			// check if context was cancelled, signaling that the addressResolvedConsumer should stop
 			if ctx.Err() != nil {
@@ -76,7 +77,7 @@ func main() {
 		}
 	}()
 	<-consumer.ready
-	log.Println("Sarama consumer up and running!...")
+	log.Logger().Info("Sarama consumer up and running!...")
 
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGINT, syscall.SIGTERM)
@@ -84,24 +85,24 @@ func main() {
 	for healthy {
 		select {
 		case <-ctx.Done():
-			log.Println("terminating: context cancelled")
+			log.Logger().Info("terminating: context cancelled")
 			healthy = false
 		case <-sigterm:
-			log.Println("terminating: via signal")
+			log.Logger().Info("terminating: via signal")
 			healthy = false
 		}
 	}
 
 	cancel()
 	if err = client.Close(); err != nil {
-		log.Panicf("Error closing client: %v", err)
+		log.Logger().Panic("Error closing client:", zap.Error(err))
 	}
 }
 
 func (consumer *Consumer) intentResolveHandle(message *sarama.ConsumerMessage, session sarama.ConsumerGroupSession) {
 	var messagePayload IntentMessagePayload
 	if err := json.Unmarshal(message.Value, &messagePayload); err != nil {
-		fmt.Fprintf(os.Stderr, "deserialization IntentMessagePayload error message %s error %s", string(message.Value), err.Error())
+		log.Logger().Error("deserialization IntentMessagePayload error", zap.String("message", string(message.Value)), zap.Error(err))
 		session.MarkMessage(message, "")
 		session.Commit()
 		return
@@ -111,6 +112,12 @@ func (consumer *Consumer) intentResolveHandle(message *sarama.ConsumerMessage, s
 
 	intents, err := sendIntentResolveRequest(messagePayload.FullText, messagePayload.FeedID)
 	if err != nil {
+		if err.Error() == "alakasiz veri" {
+			if err := consumer.repo.DeleteFeedLocation(ctx, messagePayload.FeedID); err != nil {
+				log.Logger().Error("", zap.Error(err))
+			}
+		}
+		log.Logger().Error("", zap.Error(err))
 		session.MarkMessage(message, "")
 		session.Commit()
 		return
@@ -167,8 +174,8 @@ func sendIntentResolveRequest(fullText string, feedID int64) (string, error) {
 
 	intents := make([]string, 0)
 	for _, val := range intentResp.Results[0] {
-		if val.Score >= 0.3 {
-			if val.Label == "Alakasiz" && val.Score >= 0.5 {
+		if val.Score >= 0.4 {
+			if val.Label == "Alakasiz" && val.Score >= 0.7 {
 				return "", fmt.Errorf("alakasiz veri")
 			}
 			intents = append(intents, strings.ToLower(val.Label))
@@ -291,7 +298,7 @@ type Consumer struct {
 func NewConsumer() *Consumer {
 	producer, err := broker.NewProducer()
 	if err != nil {
-		log.Panic("failed to init kafka producer. err:", err)
+		log.Logger().Panic("failed to init kafka producer. err:", zap.Error(err))
 	}
 	return &Consumer{
 		ready:    make(chan bool),

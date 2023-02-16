@@ -91,7 +91,7 @@ func (repo *Repository) Close() {
 	repo.pool.Close()
 }
 
-func (repo *Repository) GetLocations(getLocationsQuery *GetLocationsQuery) ([]feeds.Result, error) {
+func (repo *Repository) GetLocations(getLocationsQuery *GetLocationsQuery) ([]feeds.Location, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*25)
 	defer cancel()
 
@@ -161,17 +161,15 @@ func (repo *Repository) GetLocations(getLocationsQuery *GetLocationsQuery) ([]fe
 		return nil, fmt.Errorf("could not query locations: %w", err)
 	}
 
-	var results []feeds.Result
+	var results []feeds.Location
 
 	for query.Next() {
-		var result feeds.Result
-		result.Loc = make([]float64, 2)
-
+		var result feeds.Location
 		if getLocationsQuery.ExtraParams {
 			err := query.Scan(&result.ID,
-				&result.Loc[0],
-				&result.Loc[1],
-				&result.Entry_ID,
+				&result.Latitude,
+				&result.Longitude,
+				&result.EntryID,
 				&result.Epoch,
 				&result.Reason,
 				&result.Channel,
@@ -182,17 +180,18 @@ func (repo *Repository) GetLocations(getLocationsQuery *GetLocationsQuery) ([]fe
 			)
 			if err != nil {
 				continue
-				// return nil, fmt.Errorf("could not scan locations: %w", err)
 			}
+
+			result.Loc = []float64{result.Latitude, result.Longitude}
 
 			if *result.Channel == "twitter" || *result.Channel == "discord" || *result.Channel == "babala" {
 				result.ExtraParameters = maskFields(result.ExtraParameters)
 			}
 		} else {
 			err := query.Scan(&result.ID,
-				&result.Loc[0],
-				&result.Loc[1],
-				&result.Entry_ID,
+				&result.Latitude,
+				&result.Longitude,
+				&result.EntryID,
 				&result.Epoch,
 				&result.Reason,
 				&result.Channel,
@@ -201,8 +200,8 @@ func (repo *Repository) GetLocations(getLocationsQuery *GetLocationsQuery) ([]fe
 				&result.Needs)
 			if err != nil {
 				continue
-				// return nil, fmt.Errorf("could not scan locations: %w", err)
 			}
+			result.Loc = []float64{result.Latitude, result.Longitude}
 		}
 
 		results = append(results, result)
@@ -359,29 +358,31 @@ func (repo *Repository) createFeedEntry(ctx context.Context, tx pgx.Tx, feed fee
 }
 
 func (repo *Repository) createFeedLocation(ctx context.Context, tx pgx.Tx, location feeds.Location) (int64, error) {
-	q := `INSERT INTO ` + feedsLocationTableName + `(
-			formatted_address, 
-			latitude, longitude, 
-			northeast_lat, northeast_lng, 
-			southwest_lat, southwest_lng, 
-			entry_id, "timestamp", 
-			epoch, reason, channel
-		) values (
-			$1, $2, $3, $4, $5, $6, $7,
-			$8, $9, $10, $11, $12
-		) RETURNING id;`
-
-	var id int64
-
-	if location.FormattedAddress != "" && location.Latitude != 0 && location.Longitude != 0 {
-		err := tx.QueryRow(ctx, q,
-			location.FormattedAddress,
+	rawSql, args, err := psql.Insert(feedsLocationTableName).
+		Columns(
+			"id", "formatted_address",
+			"latitude", "longitude",
+			"northeast_lat", "northeast_lng",
+			"southwest_lat", "southwest_lng",
+			"entry_id", "timestamp",
+			"epoch", "reason", "channel", "extra_parameters").
+		Suffix("RETURNING \"id\"").
+		Values(location.EntryID, location.FormattedAddress,
 			location.Latitude, location.Longitude,
 			location.NortheastLat, location.NortheastLng,
 			location.SouthwestLat, location.SouthwestLng,
 			location.EntryID, location.Timestamp,
-			location.Epoch, location.Reason, location.Channel,
-		).Scan(&id)
+			location.Epoch, location.Reason, location.Channel, location.ExtraParameters).
+		ToSql()
+
+	if err != nil {
+		return 0, fmt.Errorf("could not prepare insert feeds location: %w", err)
+	}
+
+	var id int64
+
+	if location.FormattedAddress != "" && location.Latitude != 0 && location.Longitude != 0 {
+		err := tx.QueryRow(ctx, rawSql, args...).Scan(&id)
 		if err != nil {
 			return 0, fmt.Errorf("could not insert feeds location: %w", err)
 		}

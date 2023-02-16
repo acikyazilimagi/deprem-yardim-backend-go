@@ -91,7 +91,7 @@ func (repo *Repository) Close() {
 	repo.pool.Close()
 }
 
-func (repo *Repository) GetLocations(getLocationsQuery *GetLocationsQuery) ([]feeds.Result, error) {
+func (repo *Repository) GetLocations(getLocationsQuery *GetLocationsQuery) ([]feeds.Location, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*25)
 	defer cancel()
 
@@ -161,17 +161,15 @@ func (repo *Repository) GetLocations(getLocationsQuery *GetLocationsQuery) ([]fe
 		return nil, fmt.Errorf("could not query locations: %w", err)
 	}
 
-	var results []feeds.Result
+	var results []feeds.Location
 
 	for query.Next() {
-		var result feeds.Result
-		result.Loc = make([]float64, 2)
-
+		var result feeds.Location
 		if getLocationsQuery.ExtraParams {
 			err := query.Scan(&result.ID,
-				&result.Loc[0],
-				&result.Loc[1],
-				&result.Entry_ID,
+				&result.Latitude,
+				&result.Longitude,
+				&result.EntryID,
 				&result.Epoch,
 				&result.Reason,
 				&result.Channel,
@@ -182,7 +180,6 @@ func (repo *Repository) GetLocations(getLocationsQuery *GetLocationsQuery) ([]fe
 			)
 			if err != nil {
 				continue
-				// return nil, fmt.Errorf("could not scan locations: %w", err)
 			}
 
 			if *result.Channel == "twitter" || *result.Channel == "discord" || *result.Channel == "babala" {
@@ -190,9 +187,9 @@ func (repo *Repository) GetLocations(getLocationsQuery *GetLocationsQuery) ([]fe
 			}
 		} else {
 			err := query.Scan(&result.ID,
-				&result.Loc[0],
-				&result.Loc[1],
-				&result.Entry_ID,
+				&result.Latitude,
+				&result.Longitude,
+				&result.EntryID,
 				&result.Epoch,
 				&result.Reason,
 				&result.Channel,
@@ -201,7 +198,6 @@ func (repo *Repository) GetLocations(getLocationsQuery *GetLocationsQuery) ([]fe
 				&result.Needs)
 			if err != nil {
 				continue
-				// return nil, fmt.Errorf("could not scan locations: %w", err)
 			}
 		}
 

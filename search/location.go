@@ -33,7 +33,7 @@ func NewLocationIndex() *LocationIndex {
 	}
 }
 
-func (l *LocationIndex) GetLocations(getLocationsQuery *repository.GetLocationsQuery) ([]feeds.Result, int, error) {
+func (l *LocationIndex) GetLocations(getLocationsQuery *repository.GetLocationsQuery) ([]feeds.Location, int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*25)
 	defer cancel()
 
@@ -133,52 +133,27 @@ func (l *LocationIndex) GetLocations(getLocationsQuery *repository.GetLocationsQ
 		return nil, 0, err
 	}
 
-	var results []feeds.Result
+	var results []feeds.Location
 
 	for _, hit := range res.Hits.Hits {
 		source := hit.Source
 		id, _ := strconv.ParseInt(hit.Id, 10, 64)
+		reasons := strings.Join(source.Reason, ",")
+		channels := strings.Join(source.Channel, ",")
 
-		var needs []feeds.NeedItem
-
-		if source.Needs != nil {
-			for _, need := range source.Needs {
-				needs = append(needs, feeds.NeedItem{
-					Label:  need.Label,
-					Status: need.Status,
-				})
-			}
-		}
-
-		var reasons string
-
-		if source.Reason == nil || len(source.Reason) == 0 {
-			reasons = ""
-		} else {
-			reasons = strings.Join(source.Reason, ",")
-		}
-
-		var channels string
-
-		if source.Channel == nil || len(source.Channel) == 0 {
-			channels = ""
-		} else {
-			channels = strings.Join(source.Channel, ",")
-		}
-
-		results = append(results, feeds.Result{
+		results = append(results, feeds.Location{
 			ID: id,
 			Loc: []float64{
 				source.RawLocations.Center.Lat,
 				source.RawLocations.Center.Lon,
 			},
-			Entry_ID:           source.EntryId,
+			EntryID:            source.EntryId,
 			Epoch:              source.Epoch,
 			Reason:             &reasons,
 			Channel:            &channels,
 			IsLocationVerified: source.IsLocationVerified,
 			IsNeedVerified:     source.IsNeedVerified,
-			Needs:              needs,
+			Needs:              source.Needs,
 			ExtraParameters:    source.ExtraParameters,
 		})
 	}
@@ -202,17 +177,8 @@ func (l *LocationIndex) CreateFeedLocation(ctx context.Context, fullText string,
 		},
 	}
 
-	var reason []string
-
-	if location.Reason == "" {
-		reason = []string{}
-	}
-
-	var channel []string
-
-	if location.Channel == "" {
-		channel = []string{}
-	}
+	reason := strings.Split(*location.Reason, ",")
+	channel := strings.Split(*location.Channel, ",")
 
 	item := Item[Location]{
 		Index: l.indexName,
@@ -230,7 +196,7 @@ func (l *LocationIndex) CreateFeedLocation(ctx context.Context, fullText string,
 			IsLocationVerified: false,
 			IsNeedVerified:     false,
 			IsDeleted:          false,
-			Needs:              []Need{},
+			Needs:              location.Needs,
 		},
 	}
 

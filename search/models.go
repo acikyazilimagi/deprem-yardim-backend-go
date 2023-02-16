@@ -1,5 +1,9 @@
 package search
 
+import (
+	"github.com/acikkaynak/backend-api-go/feeds"
+)
+
 // Common Models
 
 type Total struct {
@@ -34,23 +38,18 @@ type Locations struct {
 	BottomLeft Coordinates `json:"bottom_left"`
 }
 
-type Need struct {
-	Label  string `json:"label"`
-	Status bool   `json:"status"`
-}
-
 type Location struct {
-	FormattedAddress   string    `json:"formatted_address"`
-	Locations          Locations `json:"locations"`
-	RawLocations       Locations `json:"raw_locations"`
-	FullText           string    `json:"full_text"`
-	ExtraParameters    *string   `json:"extra_parameters,omitempty"`
-	Channel            []string  `json:"channel,omitempty"`
-	Reason             []string  `json:"reason,omitempty"`
-	EntryId            int64     `json:"entry_id"`
-	Epoch              int64     `json:"epoch"`
-	IsLocationVerified bool      `json:"is_location_verified"`
-	IsNeedVerified     bool      `json:"is_need_verified"`
-	IsDeleted          bool      `json:"is_deleted"`
-	Needs              []Need    `json:"needs,omitempty"`
+	FormattedAddress   string           `json:"formatted_address"`
+	Locations          Locations        `json:"locations"`
+	RawLocations       Locations        `json:"raw_locations"`
+	FullText           string           `json:"full_text"`
+	ExtraParameters    *string          `json:"extra_parameters,omitempty"`
+	Channel            []string         `json:"channel,omitempty"`
+	Reason             []string         `json:"reason,omitempty"`
+	EntryId            int64            `json:"entry_id"`
+	Epoch              int64            `json:"epoch"`
+	IsLocationVerified bool             `json:"is_location_verified"`
+	IsNeedVerified     bool             `json:"is_need_verified"`
+	IsDeleted          bool             `json:"is_deleted"`
+	Needs              []feeds.NeedItem `json:"needs,omitempty"`
 }

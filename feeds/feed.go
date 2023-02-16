@@ -62,6 +62,7 @@ type Location struct {
 	Epoch            int64     `json:"epoch"`
 	Reason           string    `json:"reason"`
 	Channel          string    `json:"channel"`
+	ExtraParameters  *string   `json:"extra_parameters"`
 }
 
 type UpdateFeedLocationsRequest struct {

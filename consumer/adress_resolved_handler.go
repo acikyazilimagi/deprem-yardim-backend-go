@@ -1,4 +1,4 @@
-package main
+package consumer
 
 import (
 	"context"
@@ -67,7 +67,7 @@ func (consumer *Consumer) addressResolveHandle(message *sarama.ConsumerMessage, 
 	})
 
 	_, _, err = consumer.producer.SendMessage(&sarama.ProducerMessage{
-		Topic: intentResolvedTopicName,
+		Topic: IntentResolvedTopicName,
 		Key:   sarama.StringEncoder(fmt.Sprintf("%d", entryID)),
 		Value: sarama.ByteEncoder(intentPayloadByte),
 	})

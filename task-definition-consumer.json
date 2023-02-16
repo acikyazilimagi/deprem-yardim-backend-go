@@ -3,8 +3,8 @@
     {
       "name": "container-name",
       "image": "nginx:latest",
-      "cpu": 2048,
-      "memory": 4096,
+      "cpu": 512,
+      "memory": 1024,
       "portMappings": [],
       "essential": true,
       "environment": [],
@@ -32,7 +32,7 @@
   "networkMode": "awsvpc",
   "volumes": [],
   "placementConstraints": [],
-  "cpu": "2048",
-  "memory": "4096",
+  "cpu": "512",
+  "memory": "1024",
   "tags": []
 }

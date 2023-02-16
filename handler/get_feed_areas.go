@@ -4,6 +4,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/acikkaynak/backend-api-go/search"
+
 	"github.com/acikkaynak/backend-api-go/feeds"
 	"github.com/acikkaynak/backend-api-go/repository"
 	"github.com/gofiber/fiber/v2"
@@ -23,7 +25,7 @@ import (
 //	@Param		reason		query		string	false	"Reason",
 //	@Param		channel		query		string	false	"Channel"
 //	@Router		/feeds/areas [GET]
-func GetFeedAreas(repo *repository.Repository) fiber.Handler {
+func GetFeedAreas(repo *repository.Repository, index *search.LocationIndex) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		swLatStr := ctx.Query("sw_lat")
 		swLngStr := ctx.Query("sw_lng")
@@ -68,6 +70,10 @@ func GetFeedAreas(repo *repository.Repository) fiber.Handler {
 			IsNeedVerified:     isNeedVerified,
 		}
 
+		/*
+			TODO enable elastic read
+			data, count, err := index.GetLocations(getLocationsQuery)
+		*/
 		data, err := repo.GetLocations(getLocationsQuery)
 		if err != nil {
 			return ctx.JSON(err)

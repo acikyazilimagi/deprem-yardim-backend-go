@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"github.com/acikkaynak/backend-api-go/search"
 	"os"
 	"os/signal"
 	"syscall"
@@ -14,6 +14,7 @@ import (
 	"github.com/acikkaynak/backend-api-go/handler"
 	"github.com/acikkaynak/backend-api-go/middleware/auth"
 	"github.com/acikkaynak/backend-api-go/middleware/cache"
+	log "github.com/acikkaynak/backend-api-go/pkg/logger"
 	"github.com/acikkaynak/backend-api-go/repository"
 	_ "github.com/acikkaynak/backend-api-go/swagger"
 	swagger "github.com/arsmn/fiber-swagger/v2"
@@ -29,6 +30,7 @@ import (
 type Application struct {
 	app           *fiber.App
 	repo          *repository.Repository
+	index         *search.LocationIndex
 	kafkaProducer sarama.SyncProducer
 }
 
@@ -37,7 +39,7 @@ func (a *Application) Register() {
 	a.app.Get("/healthcheck", handler.HealthCheck)
 	a.app.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
 	a.app.Get("/monitor", monitor.New())
-	a.app.Get("/feeds/areas", handler.GetFeedAreas(a.repo))
+	a.app.Get("/feeds/areas", handler.GetFeedAreas(a.repo, a.index))
 	a.app.Patch("/feeds/areas", handler.UpdateFeedLocationsHandler(a.repo))
 	a.app.Get("/feeds/:id/", handler.GetFeedById(a.repo))
 	a.app.Post("/events", handler.CreateEventHandler(a.kafkaProducer))
@@ -65,9 +67,11 @@ func main() {
 	repo := repository.New()
 	defer repo.Close()
 
+	index := search.NewLocationIndex()
+
 	kafkaProducer, err := broker.NewProducer()
 	if err != nil {
-		log.Println("failed to init kafka produder. err:", err)
+		log.Logger().Info("failed to init kafka produder. err: " + err.Error())
 	}
 
 	app := fiber.New()
@@ -80,7 +84,7 @@ func main() {
 	app.Use(pprof.New())
 	app.Use(cache.New())
 
-	application := &Application{app: app, repo: repo, kafkaProducer: kafkaProducer}
+	application := &Application{app: app, repo: repo, index: index, kafkaProducer: kafkaProducer}
 	application.Register()
 
 	c := make(chan os.Signal, 1)
@@ -89,11 +93,11 @@ func main() {
 
 	go func() {
 		_ = <-c
-		fmt.Println("application gracefully shutting down..")
+		log.Logger().Info("application gracefully shutting down..")
 		_ = app.Shutdown()
 	}()
 
 	if err := app.Listen(":80"); err != nil {
-		panic(fmt.Sprintf("app error: %s", err.Error()))
+		log.Logger().Panic(fmt.Sprintf("app error: %s", err.Error()))
 	}
 }

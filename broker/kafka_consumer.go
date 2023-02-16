@@ -1,17 +1,17 @@
 package broker
 
 import (
-	"log"
 	"os"
 	"strings"
 
 	"github.com/Shopify/sarama"
+	log "github.com/acikkaynak/backend-api-go/pkg/logger"
 )
 
 func NewConsumerGroup(group string) (sarama.ConsumerGroup, error) {
 	kafkaBrokers := os.Getenv("KAFKA_BROKERS")
 	if kafkaBrokers == "" {
-		log.Panic("KAFKA_BROKERS env variable must be set")
+		log.Logger().Panic("KAFKA_BROKERS env variable must be set")
 	}
 	brokers := strings.Split(os.Getenv("KAFKA_BROKERS"), ",")
 

@@ -12,6 +12,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/acikkaynak/backend-api-go/search"
+
 	"github.com/Shopify/sarama"
 	"github.com/acikkaynak/backend-api-go/broker"
 	"github.com/acikkaynak/backend-api-go/feeds"
@@ -49,7 +51,7 @@ func main() {
 
 	go func() {
 		if err := http.ListenAndServe(":80", nil); err != nil {
-			fmt.Fprintf(os.Stderr, "server could not started or stopped: %s", err)
+			log.Logger().Error("server could not started or stopped", zap.Error(err))
 		}
 	}()
 
@@ -130,10 +132,18 @@ func (consumer *Consumer) intentResolveHandle(message *sarama.ConsumerMessage, s
 	}
 
 	if err := consumer.repo.UpdateLocationIntentAndNeeds(ctx, messagePayload.FeedID, intents, needs); err != nil {
-		fmt.Fprintf(os.Stderr,
-			"error updating feed entry, location intent and needs %#v error %s rawMessage %s",
-			messagePayload, err.Error(), string(message.Value))
+		log.Logger().Error("error updating feed entry, location intent and needs",
+			zap.Any("intentAndNeeds", messagePayload), zap.Error(err), zap.String("rawMessage", string(message.Value)))
 		return
+	}
+
+	messagePayload.Location.Needs = needs
+	messagePayload.Location.Reason = &intents
+
+	if err := consumer.index.CreateFeedLocation(ctx, messagePayload.FullText, messagePayload.Location); err != nil {
+		//TODO commit message when we enable elastic reads
+		log.Logger().Error("error updating elastic location intent and needs",
+			zap.Any("intentAndNeeds", messagePayload), zap.Error(err), zap.String("rawMessage", string(message.Value)))
 	}
 
 	session.MarkMessage(message, "")
@@ -144,11 +154,10 @@ func sendIntentResolveRequest(fullText string, feedID int64) (string, error) {
 	jsonBytes, err := json.Marshal(IntentRequest{
 		Inputs: fullText,
 	})
-	fmt.Println(os.Getenv("INTENT_RESOLVER_API_URL"))
 
 	req, err := http.NewRequest("POST", os.Getenv("INTENT_RESOLVER_API_URL"), bytes.NewReader(jsonBytes))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "could not prepare http request IntentMessagePayload error message %s error %s", fullText, err.Error())
+		log.Logger().Error("could not prepare http request IntentMessagePayload", zap.String("fullText", fullText), zap.Error(err))
 		return "", err
 	}
 	req.Header.Add("Authorization", "Bearer "+os.Getenv("INTENT_RESOLVER_API_KEY"))
@@ -156,18 +165,18 @@ func sendIntentResolveRequest(fullText string, feedID int64) (string, error) {
 
 	resp, err := http.DefaultClient.Do(req)
 	if resp.StatusCode != http.StatusOK {
-		fmt.Fprintf(os.Stderr, "could not get response IntentMessagePayload feedID %d status %d", feedID, resp.StatusCode)
+		log.Logger().Error("could not get response IntentMessagePayload", zap.Int64("feedID", feedID), zap.Int("statusCode", resp.StatusCode))
 		return "", err
 	}
 
 	intentResp := &IntentResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(&intentResp.Results); err != nil {
-		fmt.Fprintf(os.Stderr, "could not get decode response IntentMessagePayload feedID %d err %s", feedID, err.Error())
+		log.Logger().Error("could not get decode response IntentMessagePayload", zap.Int64("feedID", feedID), zap.Int("statusCode", resp.StatusCode))
 		return "", err
 	}
 
 	if len(intentResp.Results) == 0 {
-		fmt.Fprintf(os.Stderr, "no data found on response IntentMessagePayload feedID %d", feedID)
+		log.Logger().Error("no data found on response IntentMessagePayload", zap.Int64("feedID", feedID))
 		return "", nil
 	}
 
@@ -191,7 +200,7 @@ func sendNeedsResolveRequest(fullText string, feedID int64) ([]feeds.NeedItem, e
 
 	req, err := http.NewRequest("POST", os.Getenv("NEEDS_RESOLVER_API_URL"), bytes.NewReader(jsonBytes))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "could not prepare http request NeedsMessagePayload error message %s error %s", fullText, err.Error())
+		log.Logger().Error("could not prepare http request NeedsMessagePayload", zap.String("fullText", fullText), zap.Error(err))
 		return nil, err
 	}
 
@@ -200,20 +209,19 @@ func sendNeedsResolveRequest(fullText string, feedID int64) ([]feeds.NeedItem, e
 
 	resp, err := http.DefaultClient.Do(req)
 	if resp.StatusCode != http.StatusOK {
-		fmt.Fprintf(os.Stderr, "could not get response NeedsMessagePayload feedID %d status %d", feedID, resp.StatusCode)
+		log.Logger().Error("could not get response NeedsMessagePayload", zap.Int64("feedID", feedID), zap.Int("status", resp.StatusCode))
 		return nil, err
 	}
 
 	needsResp := &NeedsResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(&needsResp); err != nil {
-		fmt.Fprintf(os.Stderr, "could not get decode response NeedsMessagePayload feedID %d err %s", feedID, err.Error())
+		log.Logger().Error("could not get decode response NeedsMessagePayload", zap.Int64("feedID", feedID), zap.Error(err))
 		return nil, err
 	}
 
 	needs := make([]feeds.NeedItem, 0)
 	if len(needsResp.Response) == 0 {
-		fmt.Fprintf(os.Stderr, "no data found on response NeedsMessagePayload feedID %d", feedID)
-		// ret empty
+		log.Logger().Error("no data found on response NeedsMessagePayload", zap.Int64("feedID", feedID))
 		return needs, nil
 	}
 
@@ -230,7 +238,8 @@ func sendNeedsResolveRequest(fullText string, feedID int64) ([]feeds.NeedItem, e
 func (consumer *Consumer) addressResolveHandle(message *sarama.ConsumerMessage, session sarama.ConsumerGroupSession) {
 	var messagePayload ConsumeMessagePayload
 	if err := json.Unmarshal(message.Value, &messagePayload); err != nil {
-		fmt.Fprintf(os.Stderr, "deserialization error message %s error %s", string(message.Value), err.Error())
+		log.Logger().Error("deserialization error ConsumerMessagePayload", zap.String("payload", string(message.Value)), zap.Error(err))
+
 		session.MarkMessage(message, "")
 		session.Commit()
 		return
@@ -255,13 +264,26 @@ func (consumer *Consumer) addressResolveHandle(message *sarama.ConsumerMessage, 
 
 	err, entryID := consumer.repo.CreateFeed(ctx, f, messagePayload.Location)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error inserting feed entry and location message %#v error %s rawMessage %s", messagePayload, err.Error(), string(message.Value))
+		log.Logger().Error("error inserting feed entry and location message to db",
+			zap.Any("payload", messagePayload),
+			zap.Error(err),
+			zap.String("rawMessage", string(message.Value)))
 		return
+	}
+
+	if err := consumer.index.CreateFeedLocation(ctx, messagePayload.Feed.FullText, messagePayload.Location); err != nil {
+		log.Logger().Error("error inserting feed entry and location message to search",
+			zap.Any("payload", messagePayload),
+			zap.Error(err),
+			zap.String("rawMessage", string(message.Value)))
+		//TODO commit message when elastic read enabled
+		//return
 	}
 
 	intentPayloadByte, err := json.Marshal(IntentMessagePayload{
 		FeedID:   entryID,
 		FullText: messagePayload.Feed.FullText,
+		Location: messagePayload.Location,
 	})
 
 	_, _, err = consumer.producer.SendMessage(&sarama.ProducerMessage{
@@ -270,7 +292,9 @@ func (consumer *Consumer) addressResolveHandle(message *sarama.ConsumerMessage, 
 		Value: sarama.ByteEncoder(intentPayloadByte),
 	})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error producing intent feedID %d error %s", messagePayload.Feed.ID, err.Error())
+		log.Logger().Error("error producing intent",
+			zap.Any("feedID", messagePayload.Feed.ID),
+			zap.Error(err))
 		session.MarkMessage(message, "")
 		session.Commit()
 		return
@@ -284,6 +308,7 @@ func (consumer *Consumer) addressResolveHandle(message *sarama.ConsumerMessage, 
 type Consumer struct {
 	ready    chan bool
 	repo     *repository.Repository
+	index    *search.LocationIndex
 	producer sarama.SyncProducer
 }
 
@@ -295,6 +320,7 @@ func NewConsumer() *Consumer {
 	return &Consumer{
 		ready:    make(chan bool),
 		repo:     repository.New(),
+		index:    search.NewLocationIndex(),
 		producer: producer,
 	}
 }
@@ -351,8 +377,9 @@ type ConsumeMessagePayload struct {
 }
 
 type IntentMessagePayload struct {
-	FeedID   int64  `json:"id"`
-	FullText string `json:"full_text"`
+	FeedID   int64          `json:"id"`
+	FullText string         `json:"full_text"`
+	Location feeds.Location `json:"location"`
 }
 
 type IntentRequest struct {

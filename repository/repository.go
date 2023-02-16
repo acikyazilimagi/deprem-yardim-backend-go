@@ -409,7 +409,7 @@ func (repo *Repository) UpdateLocationIntentAndNeeds(ctx context.Context, id int
 }
 
 func (repo *Repository) DeleteFeedLocation(ctx context.Context, entryID int64) error {
-	sql, args, err := sq.Update(feedsLocationTableName).Where(sq.Eq{"entry_id": entryID}).Set("is_deleted", true).ToSql()
+	sql, args, err := psql.Update(feedsLocationTableName).Set("is_deleted", true).Where(sq.Eq{"entry_id": entryID}).ToSql()
 	if err != nil {
 		return fmt.Errorf("could not prepare soft delete query: %w", err)
 	}

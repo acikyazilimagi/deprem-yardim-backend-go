@@ -141,6 +141,7 @@ func (consumer *Consumer) intentResolveHandle(message *sarama.ConsumerMessage, s
 	messagePayload.Location.Reason = &intents
 
 	if err := consumer.index.CreateFeedLocation(ctx, messagePayload.FullText, messagePayload.Location); err != nil {
+		//TODO commit message when we enable elastic reads
 		log.Logger().Error("error updating elastic location intent and needs",
 			zap.Any("intentAndNeeds", messagePayload), zap.Error(err), zap.String("rawMessage", string(message.Value)))
 	}
@@ -270,13 +271,13 @@ func (consumer *Consumer) addressResolveHandle(message *sarama.ConsumerMessage, 
 		return
 	}
 
-	err = consumer.index.CreateFeedLocation(ctx, messagePayload.Feed.FullText, messagePayload.Location)
-	if err != nil {
+	if err := consumer.index.CreateFeedLocation(ctx, messagePayload.Feed.FullText, messagePayload.Location); err != nil {
 		log.Logger().Error("error inserting feed entry and location message to search",
 			zap.Any("payload", messagePayload),
 			zap.Error(err),
 			zap.String("rawMessage", string(message.Value)))
-		return
+		//TODO commit message when elastic read enabled
+		//return
 	}
 
 	intentPayloadByte, err := json.Marshal(IntentMessagePayload{

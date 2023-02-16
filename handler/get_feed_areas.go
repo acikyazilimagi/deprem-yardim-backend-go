@@ -1,9 +1,10 @@
 package handler
 
 import (
-	"github.com/acikkaynak/backend-api-go/search"
 	"strconv"
 	"time"
+
+	"github.com/acikkaynak/backend-api-go/search"
 
 	"github.com/acikkaynak/backend-api-go/feeds"
 	"github.com/acikkaynak/backend-api-go/repository"
@@ -69,13 +70,17 @@ func GetFeedAreas(repo *repository.Repository, index *search.LocationIndex) fibe
 			IsNeedVerified:     isNeedVerified,
 		}
 
-		data, count, err := index.GetLocations(getLocationsQuery)
+		/*
+			TODO enable elastic read
+			data, count, err := index.GetLocations(getLocationsQuery)
+		*/
+		data, err := repo.GetLocations(getLocationsQuery)
 		if err != nil {
 			return ctx.JSON(err)
 		}
 
 		resp := &feeds.Response{
-			Count:   count,
+			Count:   len(data),
 			Results: data,
 		}
 

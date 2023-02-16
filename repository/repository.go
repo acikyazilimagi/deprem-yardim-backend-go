@@ -21,7 +21,7 @@ import (
 
 var (
 	psql                   = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
-	feedsLocationTableName = "feeds_location"
+	feedsLocationTableName = "feeds_location_backup"
 )
 
 type PgxIface interface {
@@ -359,29 +359,32 @@ func (repo *Repository) createFeedEntry(ctx context.Context, tx pgx.Tx, feed fee
 }
 
 func (repo *Repository) createFeedLocation(ctx context.Context, tx pgx.Tx, location feeds.Location) (int64, error) {
-	q := `INSERT INTO ` + feedsLocationTableName + `(
-			formatted_address, 
-			latitude, longitude, 
-			northeast_lat, northeast_lng, 
-			southwest_lat, southwest_lng, 
-			entry_id, "timestamp", 
-			epoch, reason, channel
-		) values (
-			$1, $2, $3, $4, $5, $6, $7,
-			$8, $9, $10, $11, $12
-		) RETURNING id;`
-
-	var id int64
-
-	if location.FormattedAddress != "" && location.Latitude != 0 && location.Longitude != 0 {
-		err := tx.QueryRow(ctx, q,
-			location.FormattedAddress,
+	rawSql, args, err := psql.Insert(feedsLocationTableName).
+		Columns(
+			"id", "formatted_address",
+			"latitude", "longitude",
+			"northeast_lat", "northeast_lng",
+			"southwest_lat", "southwest_lng",
+			"entry_id", "timestamp",
+			"epoch", "reason", "channel", "extra_parameters").
+		//Select(sq.Select("id")).
+		Suffix("RETURNING \"id\"").
+		Values(location.EntryID, location.FormattedAddress,
 			location.Latitude, location.Longitude,
 			location.NortheastLat, location.NortheastLng,
 			location.SouthwestLat, location.SouthwestLng,
 			location.EntryID, location.Timestamp,
-			location.Epoch, location.Reason, location.Channel,
-		).Scan(&id)
+			location.Epoch, location.Reason, location.Channel, location.ExtraParameters).
+		ToSql()
+
+	if err != nil {
+		return 0, fmt.Errorf("could not prepare insert feeds location: %w", err)
+	}
+
+	var id int64
+
+	if location.FormattedAddress != "" && location.Latitude != 0 && location.Longitude != 0 {
+		err := tx.QueryRow(ctx, rawSql, args...).Scan(&id)
 		if err != nil {
 			return 0, fmt.Errorf("could not insert feeds location: %w", err)
 		}

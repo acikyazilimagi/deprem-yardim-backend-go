@@ -2,13 +2,14 @@ package search
 
 import (
 	"context"
-	"github.com/acikkaynak/backend-api-go/feeds"
-	"github.com/acikkaynak/backend-api-go/repository"
 	"log"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/acikkaynak/backend-api-go/feeds"
+	"github.com/acikkaynak/backend-api-go/repository"
 )
 
 type LocationIndex struct {
@@ -172,7 +173,6 @@ func (l *LocationIndex) GetLocations(getLocationsQuery *repository.GetLocationsQ
 				source.RawLocations.Center.Lon,
 			},
 			Entry_ID:           source.EntryId,
-			Timestamp:          source.Timestamp,
 			Epoch:              source.Epoch,
 			Reason:             &reasons,
 			Channel:            &channels,
@@ -186,7 +186,7 @@ func (l *LocationIndex) GetLocations(getLocationsQuery *repository.GetLocationsQ
 	return results, res.Hits.Total.Value, nil
 }
 
-func (l *LocationIndex) CreateFeedLocation(ctx context.Context, feed feeds.Feed, location feeds.Location) error {
+func (l *LocationIndex) CreateFeedLocation(ctx context.Context, fullText string, location feeds.Location) error {
 	locations := Locations{
 		Center: Coordinates{
 			Lat: location.Latitude,
@@ -201,8 +201,6 @@ func (l *LocationIndex) CreateFeedLocation(ctx context.Context, feed feeds.Feed,
 			Lon: location.SouthwestLng,
 		},
 	}
-
-	timestamp := location.Timestamp.String()
 
 	var reason []string
 
@@ -223,12 +221,11 @@ func (l *LocationIndex) CreateFeedLocation(ctx context.Context, feed feeds.Feed,
 			FormattedAddress:   location.FormattedAddress,
 			Locations:          locations,
 			RawLocations:       locations,
-			FullText:           feed.FullText,
-			Timestamp:          &timestamp,
-			ExtraParameters:    feed.ExtraParameters,
+			FullText:           fullText,
+			ExtraParameters:    location.ExtraParameters,
 			Channel:            channel,
 			Reason:             reason,
-			EntryId:            feed.ID,
+			EntryId:            location.EntryID,
 			Epoch:              location.Epoch,
 			IsLocationVerified: false,
 			IsNeedVerified:     false,

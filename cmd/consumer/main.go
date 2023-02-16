@@ -5,13 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/acikkaynak/backend-api-go/search"
 	"net/http"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/acikkaynak/backend-api-go/search"
 
 	"github.com/Shopify/sarama"
 	"github.com/acikkaynak/backend-api-go/broker"
@@ -137,6 +138,8 @@ func (consumer *Consumer) intentResolveHandle(message *sarama.ConsumerMessage, s
 		return
 	}
 
+	consumer.index.CreateFeedLocation(ctx, messagePayload.FullText, messagePayload.Location)
+
 	session.MarkMessage(message, "")
 	session.Commit()
 }
@@ -260,7 +263,7 @@ func (consumer *Consumer) addressResolveHandle(message *sarama.ConsumerMessage, 
 		return
 	}
 
-	err = consumer.index.CreateFeedLocation(ctx, f, messagePayload.Location)
+	err = consumer.index.CreateFeedLocation(ctx, messagePayload.Feed.FullText, messagePayload.Location)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error inserting feed entry and location message to search %#v error %s rawMessage %s", messagePayload, err.Error(), string(message.Value))
 		return
@@ -269,6 +272,7 @@ func (consumer *Consumer) addressResolveHandle(message *sarama.ConsumerMessage, 
 	intentPayloadByte, err := json.Marshal(IntentMessagePayload{
 		FeedID:   entryID,
 		FullText: messagePayload.Feed.FullText,
+		Location: messagePayload.Location,
 	})
 
 	_, _, err = consumer.producer.SendMessage(&sarama.ProducerMessage{
@@ -360,8 +364,9 @@ type ConsumeMessagePayload struct {
 }
 
 type IntentMessagePayload struct {
-	FeedID   int64  `json:"id"`
-	FullText string `json:"full_text"`
+	FeedID   int64          `json:"id"`
+	FullText string         `json:"full_text"`
+	Location feeds.Location `json:"location"`
 }
 
 type IntentRequest struct {

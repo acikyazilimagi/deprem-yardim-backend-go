@@ -44,7 +44,6 @@ type Location struct {
 	Locations          Locations `json:"locations"`
 	RawLocations       Locations `json:"raw_locations"`
 	FullText           string    `json:"full_text"`
-	Timestamp          *string   `json:"timestamp,omitempty"`
 	ExtraParameters    *string   `json:"extra_parameters,omitempty"`
 	Channel            []string  `json:"channel,omitempty"`
 	Reason             []string  `json:"reason,omitempty"`

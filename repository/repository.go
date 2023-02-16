@@ -366,7 +366,6 @@ func (repo *Repository) createFeedLocation(ctx context.Context, tx pgx.Tx, locat
 			"southwest_lat", "southwest_lng",
 			"entry_id", "timestamp",
 			"epoch", "reason", "channel", "extra_parameters").
-		//Select(sq.Select("id")).
 		Suffix("RETURNING \"id\"").
 		Values(location.EntryID, location.FormattedAddress,
 			location.Latitude, location.Longitude,

@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/acikkaynak/backend-api-go/search"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/acikkaynak/backend-api-go/search"
 
 	"github.com/gofiber/fiber/v2/middleware/pprof"
 

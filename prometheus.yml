@@ -7,4 +7,11 @@ scrape_configs:
   - job_name: 'golangsvc'
     scrape_interval: 5s
     static_configs:
-      - targets: ['backend-go-alb-1135796736.eu-central-1.elb.amazonaws.com']
+      - targets:
+          - ${IP}
+        labels:
+          version: ${VERSION}
+  - job_name: 'postgresvc'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ${CONTAINERIP}

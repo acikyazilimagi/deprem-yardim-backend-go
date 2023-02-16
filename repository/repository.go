@@ -182,6 +182,8 @@ func (repo *Repository) GetLocations(getLocationsQuery *GetLocationsQuery) ([]fe
 				continue
 			}
 
+			result.Loc = []float64{result.Latitude, result.Longitude}
+
 			if *result.Channel == "twitter" || *result.Channel == "discord" || *result.Channel == "babala" {
 				result.ExtraParameters = maskFields(result.ExtraParameters)
 			}
@@ -199,6 +201,7 @@ func (repo *Repository) GetLocations(getLocationsQuery *GetLocationsQuery) ([]fe
 			if err != nil {
 				continue
 			}
+			result.Loc = []float64{result.Latitude, result.Longitude}
 		}
 
 		results = append(results, result)

@@ -7,6 +7,7 @@ import (
 	"syscall"
 
 	"github.com/acikkaynak/backend-api-go/search"
+	jsoniter "github.com/json-iterator/go"
 
 	"github.com/gofiber/fiber/v2/middleware/pprof"
 
@@ -21,7 +22,6 @@ import (
 	swagger "github.com/arsmn/fiber-swagger/v2"
 	"github.com/gofiber/adaptor/v2"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/monitor"
 	"github.com/gofiber/fiber/v2/middleware/recover"
@@ -75,10 +75,18 @@ func main() {
 		log.Logger().Info("failed to init kafka produder. err: " + err.Error())
 	}
 
-	app := fiber.New()
-	app.Use(compress.New(compress.Config{
-		Level: compress.LevelBestCompression,
-	}))
+	app := fiber.New(fiber.Config{
+		JSONEncoder: jsoniter.Marshal,
+		JSONDecoder: jsoniter.Unmarshal,
+	})
+
+	//app := fiber.New()
+
+	/*
+		app.Use(compress.New(compress.Config{
+			Level: compress.LevelBestCompression,
+		}))
+	*/
 	app.Use(cors.New())
 	app.Use(recover.New())
 	app.Use(auth.New())

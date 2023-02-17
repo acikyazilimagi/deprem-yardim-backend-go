@@ -2,10 +2,11 @@ package search
 
 import (
 	"context"
-	"encoding/json"
-	"github.com/valyala/fasthttp"
 	"log"
 	"os"
+
+	jsoniter "github.com/json-iterator/go"
+	"github.com/valyala/fasthttp"
 )
 
 type index[T any] struct {
@@ -32,7 +33,7 @@ func (i *index[T]) Bulk(ctx context.Context, items []Item[T]) error {
 	for _, item := range items {
 		payload = append(payload, []byte(`{"index":{"_index" : "`+i.name+`", "_id":"`+item.Id+`"}}`)...)
 		payload = append(payload, '\n')
-		source, _ := json.Marshal(item.Source)
+		source, _ := jsoniter.Marshal(item.Source)
 		payload = append(payload, source...)
 		payload = append(payload, '\n')
 	}
@@ -55,7 +56,7 @@ func (i *index[T]) Bulk(ctx context.Context, items []Item[T]) error {
 	body := res.Body()
 	var response map[string]interface{}
 
-	if err := json.Unmarshal(body, &response); err != nil {
+	if err := jsoniter.Unmarshal(body, &response); err != nil {
 		return err
 	}
 
@@ -65,7 +66,7 @@ func (i *index[T]) Bulk(ctx context.Context, items []Item[T]) error {
 }
 
 func (i *index[T]) Search(ctx context.Context, query map[string]interface{}) (*Result[T], error) {
-	payload, _ := json.Marshal(query)
+	payload, _ := jsoniter.Marshal(query)
 
 	req := fasthttp.AcquireRequest()
 	req.SetBody(payload)
@@ -85,7 +86,7 @@ func (i *index[T]) Search(ctx context.Context, query map[string]interface{}) (*R
 	body := res.Body()
 	var response Result[T]
 
-	if err := json.Unmarshal(body, &response); err != nil {
+	if err := jsoniter.Unmarshal(body, &response); err != nil {
 		return nil, err
 	}
 

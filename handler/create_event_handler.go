@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -9,6 +8,7 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	jsoniter "github.com/json-iterator/go"
 )
 
 type request struct {
@@ -43,7 +43,7 @@ func CreateEventHandler(producer sarama.SyncProducer) fiber.Handler {
 
 		for _, f := range req.Feeds {
 			f.ID = uuid.New().String()
-			bytes, _ := json.Marshal(f)
+			bytes, _ := jsoniter.Marshal(f)
 
 			_, _, err := producer.SendMessage(&sarama.ProducerMessage{
 				Topic: fmt.Sprintf("topic.raw.%s", f.Channel),

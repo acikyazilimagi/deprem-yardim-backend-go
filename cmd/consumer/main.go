@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -13,6 +12,7 @@ import (
 	"time"
 
 	"github.com/acikkaynak/backend-api-go/search"
+	jsoniter "github.com/json-iterator/go"
 
 	"github.com/Shopify/sarama"
 	"github.com/acikkaynak/backend-api-go/broker"
@@ -102,7 +102,7 @@ func main() {
 
 func (consumer *Consumer) intentResolveHandle(message *sarama.ConsumerMessage, session sarama.ConsumerGroupSession) {
 	var messagePayload IntentMessagePayload
-	if err := json.Unmarshal(message.Value, &messagePayload); err != nil {
+	if err := jsoniter.Unmarshal(message.Value, &messagePayload); err != nil {
 		log.Logger().Error("deserialization IntentMessagePayload error", zap.String("message", string(message.Value)), zap.Error(err))
 		session.MarkMessage(message, "")
 		session.Commit()
@@ -151,7 +151,7 @@ func (consumer *Consumer) intentResolveHandle(message *sarama.ConsumerMessage, s
 }
 
 func sendIntentResolveRequest(fullText string, feedID int64) (string, error) {
-	jsonBytes, err := json.Marshal(IntentRequest{
+	jsonBytes, err := jsoniter.Marshal(IntentRequest{
 		Inputs: fullText,
 	})
 
@@ -170,7 +170,7 @@ func sendIntentResolveRequest(fullText string, feedID int64) (string, error) {
 	}
 
 	intentResp := &IntentResponse{}
-	if err := json.NewDecoder(resp.Body).Decode(&intentResp.Results); err != nil {
+	if err := jsoniter.NewDecoder(resp.Body).Decode(&intentResp.Results); err != nil {
 		log.Logger().Error("could not get decode response IntentMessagePayload", zap.Int64("feedID", feedID), zap.Int("statusCode", resp.StatusCode))
 		return "", err
 	}
@@ -194,7 +194,7 @@ func sendIntentResolveRequest(fullText string, feedID int64) (string, error) {
 }
 
 func sendNeedsResolveRequest(fullText string, feedID int64) ([]feeds.NeedItem, error) {
-	jsonBytes, err := json.Marshal(NeedsRequest{
+	jsonBytes, err := jsoniter.Marshal(NeedsRequest{
 		Inputs: []string{fullText},
 	})
 
@@ -214,7 +214,7 @@ func sendNeedsResolveRequest(fullText string, feedID int64) ([]feeds.NeedItem, e
 	}
 
 	needsResp := &NeedsResponse{}
-	if err := json.NewDecoder(resp.Body).Decode(&needsResp); err != nil {
+	if err := jsoniter.NewDecoder(resp.Body).Decode(&needsResp); err != nil {
 		log.Logger().Error("could not get decode response NeedsMessagePayload", zap.Int64("feedID", feedID), zap.Error(err))
 		return nil, err
 	}
@@ -237,7 +237,7 @@ func sendNeedsResolveRequest(fullText string, feedID int64) ([]feeds.NeedItem, e
 
 func (consumer *Consumer) addressResolveHandle(message *sarama.ConsumerMessage, session sarama.ConsumerGroupSession) {
 	var messagePayload ConsumeMessagePayload
-	if err := json.Unmarshal(message.Value, &messagePayload); err != nil {
+	if err := jsoniter.Unmarshal(message.Value, &messagePayload); err != nil {
 		log.Logger().Error("deserialization error ConsumerMessagePayload", zap.String("payload", string(message.Value)), zap.Error(err))
 
 		session.MarkMessage(message, "")
@@ -280,7 +280,7 @@ func (consumer *Consumer) addressResolveHandle(message *sarama.ConsumerMessage, 
 		//return
 	}
 
-	intentPayloadByte, err := json.Marshal(IntentMessagePayload{
+	intentPayloadByte, err := jsoniter.Marshal(IntentMessagePayload{
 		FeedID:   entryID,
 		FullText: messagePayload.Feed.FullText,
 		Location: messagePayload.Location,

@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -16,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	jsoniter "github.com/json-iterator/go"
 	"go.uber.org/zap"
 )
 
@@ -34,7 +34,7 @@ type PgxIface interface {
 }
 
 type Repository struct {
-	pool PgxIface
+	pool *pgxpool.Pool
 }
 
 type GetLocationsQuery struct {
@@ -220,7 +220,7 @@ func maskFields(extraParams *string) *string {
 	extraParamsStr = strings.ReplaceAll(extraParamsStr, " nan}", "''}")
 	extraParamsStr = strings.ReplaceAll(extraParamsStr, "\\", "")
 
-	if err := json.Unmarshal([]byte(strings.ReplaceAll(extraParamsStr, "'", "\"")), &jsonMap); err != nil {
+	if err := jsoniter.Unmarshal([]byte(strings.ReplaceAll(extraParamsStr, "'", "\"")), &jsonMap); err != nil {
 		return nil
 	}
 
@@ -230,7 +230,7 @@ func maskFields(extraParams *string) *string {
 	jsonMap["isim-soyisim"] = masker.Name(fmt.Sprintf("%v", jsonMap["isim-soyisim"]))
 	jsonMap["name_surname"] = masker.Name(fmt.Sprintf("%v", jsonMap["name_surname"]))
 	jsonMap["name"] = masker.Name(fmt.Sprintf("%v", jsonMap["name"]))
-	marshal, _ := json.Marshal(jsonMap)
+	marshal, _ := jsoniter.Marshal(jsonMap)
 	s := string(marshal)
 	return &s
 }
@@ -364,14 +364,14 @@ func (repo *Repository) createFeedLocation(ctx context.Context, tx pgx.Tx, locat
 			"latitude", "longitude",
 			"northeast_lat", "northeast_lng",
 			"southwest_lat", "southwest_lng",
-			"entry_id", "timestamp",
+			"entry_id",
 			"epoch", "reason", "channel", "extra_parameters").
 		Suffix("RETURNING \"id\"").
 		Values(location.EntryID, location.FormattedAddress,
 			location.Latitude, location.Longitude,
 			location.NortheastLat, location.NortheastLng,
 			location.SouthwestLat, location.SouthwestLng,
-			location.EntryID, location.Timestamp,
+			location.EntryID,
 			location.Epoch, location.Reason, location.Channel, location.ExtraParameters).
 		ToSql()
 

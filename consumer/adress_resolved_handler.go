@@ -65,6 +65,7 @@ func (consumer *Consumer) addressResolveHandle(message *sarama.ConsumerMessage, 
 		FeedID:          entryID,
 		FullText:        messagePayload.Feed.FullText,
 		ResolvedAddress: messagePayload.Location.FormattedAddress,
+		Location:        messagePayload.Location,
 	})
 
 	_, _, err = consumer.producer.SendMessage(&sarama.ProducerMessage{

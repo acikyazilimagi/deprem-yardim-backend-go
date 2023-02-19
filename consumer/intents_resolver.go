@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+	"github.com/acikkaynak/backend-api-go/feeds"
 	log "github.com/acikkaynak/backend-api-go/pkg/logger"
 	jsoniter "github.com/json-iterator/go"
 	"go.uber.org/zap"
@@ -33,9 +34,10 @@ type Intent []struct {
 }
 
 type IntentMessagePayload struct {
-	FeedID          int64  `json:"id"`
-	FullText        string `json:"full_text"`
-	ResolvedAddress string `json:"resolved_address"`
+	FeedID          int64          `json:"id"`
+	FullText        string         `json:"full_text"`
+	ResolvedAddress string         `json:"resolved_address"`
+	Location        feeds.Location `json:"location"`
 }
 
 type DuplicationRequest struct {
@@ -109,6 +111,15 @@ func (consumer *Consumer) intentResolveHandle(message *sarama.ConsumerMessage, s
 		log.Logger().Error("error updating feed entry, location intent and needs",
 			zap.Error(err), zap.String("payload", string(message.Value)))
 		return
+	}
+
+	messagePayload.Location.Needs = needs
+	messagePayload.Location.Reason = &intents
+
+	if err := consumer.index.CreateFeedLocation(ctx, messagePayload.FullText, messagePayload.Location); err != nil {
+		//TODO commit message when we enable elastic reads
+		log.Logger().Error("error updating elastic location intent and needs",
+			zap.Any("intentAndNeeds", messagePayload), zap.Error(err), zap.String("rawMessage", string(message.Value)))
 	}
 
 	session.MarkMessage(message, "")

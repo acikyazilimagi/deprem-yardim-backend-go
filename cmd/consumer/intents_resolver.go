@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	log "github.com/acikkaynak/backend-api-go/pkg/logger"
+	jsoniter "github.com/json-iterator/go"
 	"go.uber.org/zap"
 )
 
@@ -36,7 +36,7 @@ type IntentMessagePayload struct {
 
 func (consumer *Consumer) intentResolveHandle(message *sarama.ConsumerMessage, session sarama.ConsumerGroupSession) {
 	var messagePayload IntentMessagePayload
-	if err := json.Unmarshal(message.Value, &messagePayload); err != nil {
+	if err := jsoniter.Unmarshal(message.Value, &messagePayload); err != nil {
 		log.Logger().Error("deserialization IntentMessagePayload error", zap.String("message", string(message.Value)), zap.Error(err))
 		session.MarkMessage(message, "")
 		session.Commit()
@@ -90,9 +90,8 @@ func (consumer *Consumer) intentResolveHandle(message *sarama.ConsumerMessage, s
 	}
 
 	if err := consumer.repo.UpdateLocationIntentAndNeeds(ctx, messagePayload.FeedID, intents, needs); err != nil {
-		fmt.Fprintf(os.Stderr,
-			"error updating feed entry, location intent and needs %#v error %s rawMessage %s",
-			messagePayload, err.Error(), string(message.Value))
+		log.Logger().Error("error updating feed entry, location intent and needs",
+			zap.Error(err), zap.String("payload", string(message.Value)))
 		return
 	}
 
@@ -101,13 +100,13 @@ func (consumer *Consumer) intentResolveHandle(message *sarama.ConsumerMessage, s
 }
 
 func sendIntentResolveRequest(fullText string, feedID int64) (string, error) {
-	jsonBytes, err := json.Marshal(IntentRequest{
+	jsonBytes, err := jsoniter.Marshal(IntentRequest{
 		Inputs: fullText,
 	})
 
 	req, err := http.NewRequest("POST", os.Getenv("INTENT_RESOLVER_API_URL"), bytes.NewReader(jsonBytes))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "could not prepare http request IntentMessagePayload error message %s error %s", fullText, err.Error())
+		log.Logger().Error("could not prepare http request IntentMessagePayload", zap.String("fullText", fullText), zap.Error(err))
 		return "", err
 	}
 	req.Header.Add("Authorization", "Bearer "+os.Getenv("INTENT_RESOLVER_API_KEY"))
@@ -115,18 +114,18 @@ func sendIntentResolveRequest(fullText string, feedID int64) (string, error) {
 
 	resp, err := http.DefaultClient.Do(req)
 	if resp.StatusCode != http.StatusOK {
-		fmt.Fprintf(os.Stderr, "could not get response IntentMessagePayload feedID %d status %d", feedID, resp.StatusCode)
+		log.Logger().Error("could not get response IntentMessagePayload", zap.Int64("feedID", feedID), zap.Int("statusCode", resp.StatusCode))
 		return "", err
 	}
 
 	intentResp := &IntentResponse{}
-	if err := json.NewDecoder(resp.Body).Decode(&intentResp.Results); err != nil {
-		fmt.Fprintf(os.Stderr, "could not get decode response IntentMessagePayload feedID %d err %s", feedID, err.Error())
+	if err := jsoniter.NewDecoder(resp.Body).Decode(&intentResp.Results); err != nil {
+		log.Logger().Error("could not get decode response IntentMessagePayload", zap.Int64("feedID", feedID), zap.Error(err))
 		return "", err
 	}
 
 	if len(intentResp.Results) == 0 {
-		fmt.Fprintf(os.Stderr, "no data found on response IntentMessagePayload feedID %d", feedID)
+		log.Logger().Error("no data found on response IntentMessagePayload", zap.Int64("feedID", feedID))
 		return "", nil
 	}
 
@@ -144,7 +143,7 @@ func sendIntentResolveRequest(fullText string, feedID int64) (string, error) {
 }
 
 func checkDuplication(payload DuplicationRequest) (bool, error) {
-	jsonBytes, err := json.Marshal(payload)
+	jsonBytes, err := jsoniter.Marshal(payload)
 
 	req, err := http.NewRequest("POST", os.Getenv("DUPLICATION_API_URL"), bytes.NewReader(jsonBytes))
 	if err != nil {
@@ -161,7 +160,7 @@ func checkDuplication(payload DuplicationRequest) (bool, error) {
 	}
 
 	duplicationResp := &DuplicationResponse{}
-	if err := json.NewDecoder(resp.Body).Decode(&duplicationResp); err != nil {
+	if err := jsoniter.NewDecoder(resp.Body).Decode(&duplicationResp); err != nil {
 		log.Logger().Error("could not get decode response DuplicationRequest", zap.Error(err))
 		return false, err
 	}

@@ -1,12 +1,13 @@
 package cache
 
 import (
-	"encoding/json"
-	"fmt"
+	"context"
 	"os"
 	"time"
 
-	"github.com/go-redis/redis"
+	log "github.com/acikkaynak/backend-api-go/pkg/logger"
+	"github.com/redis/go-redis/v9"
+	"go.uber.org/zap"
 )
 
 type RedisRepository struct {
@@ -23,33 +24,30 @@ func NewRedisRepository() *RedisRepository {
 	return &RedisRepository{client: client}
 }
 
-func (repository *RedisRepository) SetKey(key string, value interface{}, ttl time.Duration) {
-	status := repository.client.Set(key, value, ttl)
+func (repository *RedisRepository) SetKey(key string, value []byte, ttl time.Duration) {
+	status := repository.client.Set(context.Background(), key, value, ttl)
 	_, err := status.Result()
 	if err != nil {
-		fmt.Println(err)
+		log.Logger().Info(err.Error())
 	}
 }
 
-func (repository *RedisRepository) Get(key string) interface{} {
-	status := repository.client.Get(key)
+func (repository *RedisRepository) Get(key string) []byte {
+	status := repository.client.Get(context.Background(), key)
 	if status.Err() != nil {
 		return nil
 	}
 
-	stringResult, err := status.Result()
-
-	var data interface{}
-	if err = json.Unmarshal([]byte(stringResult), &data); err != nil {
-		fmt.Println(err)
-		return nil
+	resp, err := status.Bytes()
+	if err != nil {
+		log.Logger().Error("redis cache get error", zap.Error(err))
 	}
 
-	return data
+	return resp
 }
 
 func (repository *RedisRepository) Delete(key string) error {
-	status := repository.client.Del(key)
+	status := repository.client.Del(context.Background(), key)
 	if status.Err() != nil {
 		return status.Err()
 	}
@@ -58,6 +56,6 @@ func (repository *RedisRepository) Delete(key string) error {
 }
 
 func (repository *RedisRepository) Prune() error {
-	resp := repository.client.FlushDB()
+	resp := repository.client.FlushDB(context.Background())
 	return resp.Err()
 }

@@ -2,13 +2,14 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
-	"fmt"
 	"net/http"
 	"os"
 	"strings"
 
 	"github.com/acikkaynak/backend-api-go/feeds"
+	log "github.com/acikkaynak/backend-api-go/pkg/logger"
+	jsoniter "github.com/json-iterator/go"
+	"go.uber.org/zap"
 )
 
 type NeedsRequest struct {
@@ -26,13 +27,13 @@ type NeedsResponse struct {
 }
 
 func sendNeedsResolveRequest(fullText string, feedID int64) ([]feeds.NeedItem, error) {
-	jsonBytes, err := json.Marshal(NeedsRequest{
+	jsonBytes, err := jsoniter.Marshal(NeedsRequest{
 		Inputs: []string{fullText},
 	})
 
 	req, err := http.NewRequest("POST", os.Getenv("NEEDS_RESOLVER_API_URL"), bytes.NewReader(jsonBytes))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "could not prepare http request NeedsMessagePayload error message %s error %s", fullText, err.Error())
+		log.Logger().Error("could not prepare http request NeedsMessagePayload", zap.String("message", fullText), zap.Error(err))
 		return nil, err
 	}
 
@@ -41,20 +42,19 @@ func sendNeedsResolveRequest(fullText string, feedID int64) ([]feeds.NeedItem, e
 
 	resp, err := http.DefaultClient.Do(req)
 	if resp.StatusCode != http.StatusOK {
-		fmt.Fprintf(os.Stderr, "could not get response NeedsMessagePayload feedID %d status %d", feedID, resp.StatusCode)
+		log.Logger().Error("could not get response NeedsMessagePayload", zap.Int64("feedID", feedID), zap.Int("statusCode", resp.StatusCode))
 		return nil, err
 	}
 
 	needsResp := &NeedsResponse{}
-	if err := json.NewDecoder(resp.Body).Decode(&needsResp); err != nil {
-		fmt.Fprintf(os.Stderr, "could not get decode response NeedsMessagePayload feedID %d err %s", feedID, err.Error())
+	if err := jsoniter.NewDecoder(resp.Body).Decode(&needsResp); err != nil {
+		log.Logger().Error("could not get decode response NeedsMessagePayload", zap.Int64("feedID", feedID), zap.Error(err))
 		return nil, err
 	}
 
 	needs := make([]feeds.NeedItem, 0)
 	if len(needsResp.Response) == 0 {
-		fmt.Fprintf(os.Stderr, "no data found on response NeedsMessagePayload feedID %d", feedID)
-		// ret empty
+		log.Logger().Error("no data found on response NeedsMessagePayload", zap.Int64("feedID", feedID))
 		return needs, nil
 	}
 

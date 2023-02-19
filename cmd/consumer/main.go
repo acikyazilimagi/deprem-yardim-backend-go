@@ -12,6 +12,7 @@ import (
 	"github.com/acikkaynak/backend-api-go/broker"
 	"github.com/acikkaynak/backend-api-go/pkg/logger"
 	"github.com/acikkaynak/backend-api-go/repository"
+	"github.com/acikkaynak/backend-api-go/search"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -44,7 +45,7 @@ func main() {
 
 	go func() {
 		if err := http.ListenAndServe(":80", nil); err != nil {
-			fmt.Fprintf(os.Stderr, "server could not started or stopped: %s", err)
+			log.Logger().Error("server could not started or stopped", zap.Error(err))
 		}
 	}()
 
@@ -97,6 +98,7 @@ func main() {
 type Consumer struct {
 	ready    chan bool
 	repo     *repository.Repository
+	index    *search.LocationIndex
 	producer sarama.SyncProducer
 }
 
@@ -108,6 +110,7 @@ func NewConsumer() *Consumer {
 	return &Consumer{
 		ready:    make(chan bool),
 		repo:     repository.New(),
+		index:    search.NewLocationIndex(),
 		producer: producer,
 	}
 }

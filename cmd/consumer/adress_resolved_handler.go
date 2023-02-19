@@ -2,13 +2,14 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/Shopify/sarama"
 	"github.com/acikkaynak/backend-api-go/feeds"
+	log "github.com/acikkaynak/backend-api-go/pkg/logger"
+	jsoniter "github.com/json-iterator/go"
+	"go.uber.org/zap"
 )
 
 type FeedMessage struct {
@@ -30,8 +31,8 @@ type ConsumeMessagePayload struct {
 
 func (consumer *Consumer) addressResolveHandle(message *sarama.ConsumerMessage, session sarama.ConsumerGroupSession) {
 	var messagePayload ConsumeMessagePayload
-	if err := json.Unmarshal(message.Value, &messagePayload); err != nil {
-		fmt.Fprintf(os.Stderr, "deserialization error message %s error %s", string(message.Value), err.Error())
+	if err := jsoniter.Unmarshal(message.Value, &messagePayload); err != nil {
+		log.Logger().Error("addressResolveHandle deserialization error", zap.String("payload", string(message.Value)), zap.Error(err))
 		session.MarkMessage(message, "")
 		session.Commit()
 		return
@@ -56,11 +57,11 @@ func (consumer *Consumer) addressResolveHandle(message *sarama.ConsumerMessage, 
 
 	err, entryID := consumer.repo.CreateFeed(ctx, f, messagePayload.Location)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error inserting feed entry and location message %#v error %s rawMessage %s", messagePayload, err.Error(), string(message.Value))
+		log.Logger().Error("error inserting feed entry and location", zap.String("payload", string(message.Value)), zap.Error(err))
 		return
 	}
 
-	intentPayloadByte, err := json.Marshal(IntentMessagePayload{
+	intentPayloadByte, err := jsoniter.Marshal(IntentMessagePayload{
 		FeedID:          entryID,
 		FullText:        messagePayload.Feed.FullText,
 		ResolvedAddress: messagePayload.Location.FormattedAddress,
@@ -72,7 +73,7 @@ func (consumer *Consumer) addressResolveHandle(message *sarama.ConsumerMessage, 
 		Value: sarama.ByteEncoder(intentPayloadByte),
 	})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error producing intent feedID %d error %s", messagePayload.Feed.ID, err.Error())
+		log.Logger().Error("error producing intent", zap.Int64("feedID", messagePayload.Feed.ID), zap.Error(err))
 		session.MarkMessage(message, "")
 		session.Commit()
 		return

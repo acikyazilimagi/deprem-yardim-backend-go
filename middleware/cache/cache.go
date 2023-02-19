@@ -38,6 +38,8 @@ func New() fiber.Handler {
 		}
 
 		c.Set("x-cached-response", "true")
-		return c.JSON(cacheData)
+		c.Response().SetBodyRaw(cacheData)
+		c.Response().Header.SetContentType(fiber.MIMEApplicationJSON)
+		return nil
 	}
 }

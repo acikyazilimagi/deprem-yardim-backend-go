@@ -36,7 +36,6 @@ var (
 		"su",
 		"teçhizat",
 		"ulaşım",
-		"yagma",
 		"yakıt",
 		"yemek",
 		"çadır",

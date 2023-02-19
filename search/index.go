@@ -2,11 +2,12 @@ package search
 
 import (
 	"context"
-	"log"
 	"os"
 
+	log "github.com/acikkaynak/backend-api-go/pkg/logger"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/valyala/fasthttp"
+	"go.uber.org/zap"
 )
 
 type index[T any] struct {
@@ -18,7 +19,7 @@ func NewIndex[T any](name string) *index[T] {
 	connStr := os.Getenv("ELASTIC_CONN_STR")
 
 	if connStr == "" {
-		log.Panic("ELASTIC_CONN_STR env variable must be set")
+		log.Logger().Panic("ELASTIC_CONN_STR env variable must be set")
 	}
 
 	return &index[T]{
@@ -59,6 +60,8 @@ func (i *index[T]) Bulk(ctx context.Context, items []Item[T]) error {
 	if err := jsoniter.Unmarshal(body, &response); err != nil {
 		return err
 	}
+
+	log.Logger().Info("elastic bulk write response", zap.Any("response", response))
 
 	fasthttp.ReleaseResponse(res)
 

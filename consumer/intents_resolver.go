@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-
 	"net/http"
 	"os"
 	"strings"
@@ -14,6 +13,10 @@ import (
 	log "github.com/acikkaynak/backend-api-go/pkg/logger"
 	jsoniter "github.com/json-iterator/go"
 	"go.uber.org/zap"
+)
+
+var (
+	duplicationApiUrlDefault = "https://deduplication-api.afetharita.com/is-duplicate"
 )
 
 type IntentRequest struct {
@@ -33,6 +36,16 @@ type IntentMessagePayload struct {
 	FeedID          int64  `json:"id"`
 	FullText        string `json:"full_text"`
 	ResolvedAddress string `json:"resolved_address"`
+}
+
+type DuplicationRequest struct {
+	Address string   `json:"address"`
+	Intents []string `json:"reasons"`
+	Needs   []string `json:"needs"`
+}
+
+type DuplicationResponse struct {
+	IsDuplicate bool `json:"is_duplicate"`
 }
 
 func (consumer *Consumer) intentResolveHandle(message *sarama.ConsumerMessage, session sarama.ConsumerGroupSession) {
@@ -87,6 +100,8 @@ func (consumer *Consumer) intentResolveHandle(message *sarama.ConsumerMessage, s
 				zap.Int64("entry_id", messagePayload.FeedID),
 				zap.Error(err))
 		}
+		session.MarkMessage(message, "")
+		session.Commit()
 		return
 	}
 
@@ -146,7 +161,12 @@ func sendIntentResolveRequest(fullText string, feedID int64) (string, error) {
 func checkDuplication(payload DuplicationRequest) (bool, error) {
 	jsonBytes, err := jsoniter.Marshal(payload)
 
-	req, err := http.NewRequest("POST", os.Getenv("DUPLICATION_API_URL"), bytes.NewReader(jsonBytes))
+	duplicationApiUrl := duplicationApiUrlDefault
+	if os.Getenv("DUPLICATION_API_URL") != "" {
+		duplicationApiUrl = os.Getenv("DUPLICATION_API_URL")
+	}
+
+	req, err := http.NewRequest("POST", duplicationApiUrl, bytes.NewReader(jsonBytes))
 	if err != nil {
 		log.Logger().Error("could not prepare http request DuplicationRequest", zap.Error(err))
 		return false, err

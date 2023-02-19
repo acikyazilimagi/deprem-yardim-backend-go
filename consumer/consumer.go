@@ -90,13 +90,3 @@ func (consumer *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, clai
 		}
 	}
 }
-
-type DuplicationRequest struct {
-	Address string   `json:"address"`
-	Intents []string `json:"reasons"`
-	Needs   []string `json:"needs"`
-}
-
-type DuplicationResponse struct {
-	IsDuplicate bool `json:"is_duplicate"`
-}

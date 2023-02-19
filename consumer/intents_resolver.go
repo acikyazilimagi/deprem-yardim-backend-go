@@ -1,9 +1,10 @@
-package main
+package consumer
 
 import (
 	"bytes"
 	"context"
 	"fmt"
+
 	"net/http"
 	"os"
 	"strings"

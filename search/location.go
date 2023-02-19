@@ -50,7 +50,7 @@ func (l *LocationIndex) GetLocations(getLocationsQuery *repository.GetLocationsQ
 
 		filters = append(filters, map[string]interface{}{
 			"range": map[string]interface{}{
-				"raw_locations.top_right.lng": map[string]interface{}{
+				"raw_locations.top_right.lon": map[string]interface{}{
 					"lte": getLocationsQuery.NeLng,
 				},
 			},
@@ -66,7 +66,7 @@ func (l *LocationIndex) GetLocations(getLocationsQuery *repository.GetLocationsQ
 
 		filters = append(filters, map[string]interface{}{
 			"range": map[string]interface{}{
-				"raw_locations.bottom_left.lng": map[string]interface{}{
+				"raw_locations.bottom_left.lon": map[string]interface{}{
 					"gte": getLocationsQuery.SwLng,
 				},
 			},

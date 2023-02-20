@@ -184,7 +184,7 @@ func checkDuplication(payload DuplicationRequest) (bool, error) {
 		log.Logger().Error("could not prepare http request DuplicationRequest", zap.Error(err))
 		return false, err
 	}
-	req.Header.Add("Authorization", "Bearer "+os.Getenv("DUPLICATION_API_KEY"))
+	req.Header.Add("Authorization", "Bearer "+os.Getenv("DEDUPLICATION_API_KEY"))
 	req.Header.Add("content-type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)

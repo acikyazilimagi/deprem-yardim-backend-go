@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -144,7 +145,10 @@ func (repo *Repository) GetLocations(getLocationsQuery *GetLocationsQuery) ([]fe
 	}
 
 	if getLocationsQuery.IsLocationVerified != "" {
-		selectBuilder = selectBuilder.Where(sq.Eq{"is_location_verified": getLocationsQuery.IsLocationVerified})
+		isLocVerified, err := strconv.ParseBool(getLocationsQuery.IsLocationVerified)
+		if err == nil {
+			selectBuilder = selectBuilder.Where(sq.Eq{"is_location_verified": isLocVerified})
+		}
 	}
 
 	if getLocationsQuery.IsNeedVerified != "" {
@@ -448,7 +452,7 @@ func (repo *Repository) UpdateFeedLocations(ctx context.Context, locations []fee
 	batch := &pgx.Batch{}
 	for _, location := range locations {
 		batch.Queue(
-			"UPDATE "+feedsLocationTableName+" SET is_verified = true, latitude = $1, longitude = $2, formatted_address = $3 WHERE entry_id = $4;",
+			"UPDATE "+feedsLocationTableName+" SET is_location_verified = true, latitude = $1, longitude = $2, formatted_address = $3 WHERE entry_id = $4;",
 			location.Latitude, location.Longitude, location.Address, location.EntryID)
 	}
 	_, err := repo.pool.SendBatch(ctx, batch).Exec()

@@ -41,6 +41,7 @@ type IntentMessagePayload struct {
 }
 
 type DuplicationRequest struct {
+	EntryID int64    `json:"entry_id"`
 	Address string   `json:"address"`
 	Intents []string `json:"reasons"`
 	Needs   []string `json:"needs"`
@@ -86,6 +87,7 @@ func (consumer *Consumer) intentResolveHandle(message *sarama.ConsumerMessage, s
 		needsForDuplication = append(needsForDuplication, n.Label)
 	}
 	isDuplicate, err := checkDuplication(DuplicationRequest{
+		EntryID: messagePayload.FeedID,
 		Address: messagePayload.ResolvedAddress,
 		Intents: strings.Split(intents, ","),
 		Needs:   needsForDuplication,
@@ -177,7 +179,7 @@ func checkDuplication(payload DuplicationRequest) (bool, error) {
 		duplicationApiUrl = os.Getenv("DUPLICATION_API_URL")
 	}
 
-	req, err := http.NewRequest("POST", duplicationApiUrl, bytes.NewReader(jsonBytes))
+	req, err := http.NewRequest("GET", duplicationApiUrl, bytes.NewReader(jsonBytes))
 	if err != nil {
 		log.Logger().Error("could not prepare http request DuplicationRequest", zap.Error(err))
 		return false, err

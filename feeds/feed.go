@@ -18,6 +18,8 @@ type Feed struct {
 	ExtraParameters  *string   `json:"extra_parameters,omitempty"`
 	FormattedAddress string    `json:"formatted_address,omitempty"`
 	Reason           *string   `json:"reason,omitempty"`
+	Lat              *float64  `json:"lat,omitempty"`
+	Lng              *float64  `json:"lng,omitempty"`
 }
 
 type LatLng struct {

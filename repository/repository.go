@@ -241,14 +241,39 @@ func (repo *Repository) GetFeed(id int64) (*feeds.Feed, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	row := repo.pool.QueryRow(ctx, fmt.Sprintf(
-		"SELECT fe.id, full_text, is_resolved, fe.channel, fe.timestamp, fe.extra_parameters, fl.formatted_address, fl.reason "+
-			"FROM feeds_entry fe, "+feedsLocationTableName+" fl "+
-			"WHERE fe.id = fl.entry_id AND fe.id=%d", id))
+	rawSql, args, err := psql.Select(
+		"fe.id",
+		"full_text",
+		"is_resolved",
+		"fe.channel",
+		"fe.timestamp",
+		"fe.epoch",
+		"fe.extra_parameters",
+		"fl.formatted_address",
+		"fl.reason",
+		"fl.latitude",
+		"fl.longitude").
+		From("feeds_entry as fe").InnerJoin(feedsLocationTableName + " as fl on fl.entry_id = fe.id").
+		Where(sq.Eq{"fe.id": id}).ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("could not prepare select feed query: %w", err)
+	}
+
+	row := repo.pool.QueryRow(ctx, rawSql, args...)
 
 	var feed feeds.Feed
-	if err := row.Scan(&feed.ID, &feed.FullText, &feed.IsResolved, &feed.Channel, &feed.Timestamp,
-		&feed.ExtraParameters, &feed.FormattedAddress, &feed.Reason); err != nil {
+	if err := row.Scan(
+		&feed.ID,
+		&feed.FullText,
+		&feed.IsResolved,
+		&feed.Channel,
+		&feed.Timestamp,
+		&feed.Epoch,
+		&feed.ExtraParameters,
+		&feed.FormattedAddress,
+		&feed.Reason,
+		&feed.Lat,
+		&feed.Lng); err != nil {
 		return nil, fmt.Errorf("could not query feed with id : %w", err)
 	}
 

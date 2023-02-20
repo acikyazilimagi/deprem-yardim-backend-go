@@ -31,9 +31,11 @@ func New() fiber.Handler {
 			return c.Next()
 		}
 		cacheData := cacheRepo.Get(hashURL)
-		if cacheData == nil {
+		if cacheData == nil || len(cacheData) == 0 {
 			c.Next()
-			cacheRepo.SetKey(hashURL, c.Response().Body(), 5*time.Minute)
+			if c.Response().StatusCode() == fiber.StatusOK && len(c.Response().Body()) > 0 {
+				cacheRepo.SetKey(hashURL, c.Response().Body(), 5*time.Minute)
+			}
 			return nil
 		}
 

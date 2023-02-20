@@ -69,6 +69,8 @@ func New() *Repository {
 		os.Exit(1)
 	}
 
+	config.MinConns = 5
+	config.MaxConns = 10
 	config.ConnConfig.Tracer = &myQueryTracer{
 		log: log.Logger().Sugar(),
 	}
